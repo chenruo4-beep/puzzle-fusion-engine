@@ -11,18 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Vercel CLI
-        run: npm install -g vercel@latest
-
-      - name: Deploy to Vercel
-        working-directory: ./frontend
+      - name: Trigger Vercel Deploy Hook
         run: |
-          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          curl -X POST "https://api.vercel.com/v1/integrations/deploy/prj_SW3HihRV2D8ATf13OJ0tjdHLzwAi/NLOJPyMzbW" \
+            -H "Content-Type: application/json" \
+            -d '{"branch":"main"}'
