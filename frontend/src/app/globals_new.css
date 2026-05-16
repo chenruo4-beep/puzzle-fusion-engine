@@ -1,0 +1,1051 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
+
+body {
+  background: linear-gradient(135deg, #f5f0eb 0%, #e8e0d5 100%);
+  color: #3c3a37;
+  min-height: 100vh;
+}
+
+.dark body {
+  background: #1a1a1a;
+  color: #e8e0d5;
+}
+
+@layer base {
+  h1, h2, h3 {
+    font-weight: 700;
+    color: #3c3a37;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+/* ═══════════════════════════════════════════════════
+   拼图片卡片 — 简化拼图视觉 (W1-3)
+   ═══════════════════════════════════════════════════ */
+
+.puzzle-card {
+  position: relative;
+  border-radius: 18px;
+  transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(60, 58, 55, 0.06);
+}
+
+/* 左侧类型色条 — 拼图边缘染色 */
+.puzzle-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  border-radius: 2px;
+  transition: all 0.28s ease;
+}
+
+/* 顶部凸起 — 拼图咬合钮 */
+.puzzle-tab {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.28s ease;
+}
+
+.puzzle-tab-top {
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.puzzle-tab-right {
+  right: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.puzzle-tab-bottom {
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 悬停时凸起放大 */
+.puzzle-card:hover .puzzle-tab {
+  width: 15px;
+  height: 15px;
+}
+
+.puzzle-card:hover .puzzle-tab-top {
+  top: -7.5px;
+}
+
+.puzzle-card:hover .puzzle-tab-right {
+  right: -7.5px;
+}
+
+.puzzle-card:hover .puzzle-tab-bottom {
+  bottom: -7.5px;
+}
+
+/* 悬停时卡片整体效果 */
+.puzzle-card:hover {
+  box-shadow: 0 6px 24px rgba(60, 58, 55, 0.12);
+  transform: translateY(-1px);
+}
+
+/* 类型标签微调 */
+.puzzle-type-badge {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ═══════════════════════════════════════════════════
+   A级改进动画 (2026-05-15)
+   ═══════════════════════════════════════════════════ */
+
+/* 1. 粒子爆发动画 — 咬合瞬间的火花效果 */
+@keyframes particle-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(var(--dx, 20px), var(--dy, -30px)) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx, 40px), var(--dy, -60px)) scale(0);
+  }
+}
+
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 100;
+  animation: particle-burst 0.8s ease-out forwards;
+}
+
+/* 2. 旋转拼图动画 — 加载态 */
+@keyframes puzzle-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.puzzle-spinner {
+  display: inline-block;
+  animation: puzzle-rotate 1.2s linear infinite;
+  font-size: 32px;
+}
+
+/* 3. 加载进度条动画 */
+@keyframes progress-fill {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+.loading-progress-bar {
+  height: 3px;
+  background: linear-gradient(90deg, #d97746, #e8a860, #d97746);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* 4. 拖拽抬升效果 */
+.puzzle-board-piece.dragging {
+  transform: translateY(-4px) scale(1.03) !important;
+  box-shadow:
+    0 12px 36px rgba(60, 58, 55, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  z-index: 1000 !important;
+}
+
+/* 5. 结果弹窗缩放淡入 */
+@keyframes modal-scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(20px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-enter {
+  animation: modal-scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 6. 咬合成功发光效果 */
+@keyframes snap-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(217, 119, 70, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 20px 8px rgba(217, 119, 70, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(217, 119, 70, 0);
+  }
+}
+
+.piece-snap-glow {
+  animation: snap-glow 0.6s ease-out forwards;
+}
+
+/* ═══════════════════════════════════════════════════
+   融合成功动画 — 边缘发光+震动 (W1-5)
+   ═══════════════════════════════════════════════════ */
+
+@keyframes fusion-glow-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(217, 119, 70, 0); }
+  12%  { box-shadow: 0 0 30px 6px rgba(217, 119, 70, 0.5), 0 0 60px 12px rgba(255, 180, 100, 0.2); }
+  25%  { box-shadow: 0 0 15px 3px rgba(217, 119, 70, 0.35), 0 0 30px 6px rgba(255, 180, 100, 0.15); }
+  38%  { box-shadow: 0 0 40px 10px rgba(217, 119, 70, 0.6), 0 0 80px 16px rgba(255, 180, 100, 0.25); }
+  50%  { box-shadow: 0 0 20px 4px rgba(217, 119, 70, 0.4), 0 0 40px 8px rgba(255, 180, 100, 0.18); }
+  65%  { box-shadow: 0 0 10px 2px rgba(217, 119, 70, 0.25), 0 0 20px 4px rgba(255, 180, 100, 0.1); }
+  85%  { box-shadow: 0 0 4px 1px rgba(217, 119, 70, 0.1); }
+  100% { box-shadow: 0 0 0 0 rgba(217, 119, 70, 0); }
+}
+
+@keyframes fusion-shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  8%  { transform: translateX(-4px) rotate(-0.6deg); }
+  18% { transform: translateX(4px) rotate(0.6deg); }
+  28% { transform: translateX(-3px) rotate(-0.4deg); }
+  38% { transform: translateX(3px) rotate(0.4deg); }
+  48% { transform: translateX(-2px) rotate(-0.2deg); }
+  58% { transform: translateX(2px) rotate(0.2deg); }
+  70% { transform: translateX(-1px); }
+  82% { transform: translateX(1px); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+
+@keyframes fusion-result-enter {
+  0%   { opacity: 0; transform: scale(0.95); }
+  60%  { opacity: 1; transform: scale(1.01); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fusion-sparkle {
+  0%, 100% { opacity: 0; transform: scale(0) translateY(0); }
+  50%  { opacity: 1; transform: scale(1) translateY(-8px); }
+}
+
+.fusion-success-glow {
+  animation:
+    fusion-glow-pulse 2.8s ease-out forwards,
+    fusion-shake 0.7s ease-out,
+    fusion-result-enter 0.5s ease-out;
+}
+
+/* 融合完成周围漂浮的 ✨ 粒子 */
+.fusion-sparkle-particle {
+  position: absolute;
+  pointer-events: none;
+  animation: fusion-sparkle 1.4s ease-out forwards;
+  font-size: 18px;
+  z-index: 10;
+}
+
+/* ═══════════════════════════════════════════════════
+   融合进度条升级 — 拼图片段逐步亮起 (W1-5)
+   ═══════════════════════════════════════════════════ */
+
+.fusion-progress-segment {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.fusion-progress-segment.active {
+  background: #d97746;
+  color: white;
+  transform: scale(1);
+}
+
+.fusion-progress-segment.current {
+  background: rgba(217, 119, 70, 0.25);
+  color: rgba(217, 119, 70, 0.6);
+  transform: scale(1.12);
+}
+
+.fusion-progress-segment.active::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 9px;
+  background: transparent;
+  box-shadow: 0 0 12px 3px rgba(217, 119, 70, 0.25);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════
+   +1连接 飘出动画 (W1-6)
+   ═══════════════════════════════════════════════════ */
+
+@keyframes float-up-fade {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  20%  { opacity: 1; transform: translateY(-12px) scale(1.12); }
+  65%  { opacity: 0.6; transform: translateY(-40px) scale(1.05); }
+  100% { opacity: 0; transform: translateY(-64px) scale(0.8); }
+}
+
+@keyframes ring-ping {
+  0%   { opacity: 0; transform: scale(0.3); }
+  50%  { opacity: 0.6; transform: scale(1.08); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+.connection-float {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 100;
+  animation: float-up-fade 2.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.ring-ping-effect {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 3px solid rgba(217, 119, 70, 0.4);
+  animation: ring-ping 1.2s cubic-bezier(0, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════
+   W3-1: 拖拽拼合 — 长按→拖拽→咬合动画
+   ═══════════════════════════════════════════════════ */
+
+/* 长按提起效果 */
+.puzzle-card-lifted {
+  opacity: 0.4;
+  transform: scale(0.95);
+  filter: blur(1px);
+  transition: all 0.25s ease;
+  pointer-events: none;
+}
+
+/* 拖拽幽灵 — 跟随光标 */
+@keyframes puzzle-ghost-appear {
+  0%   { opacity: 0; transform: scale(0.85) translate(-50%, -50%); }
+  100% { opacity: 1; transform: scale(1.02) translate(-50%, -50%); }
+}
+
+.drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  width: 120px;
+  min-height: 70px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 252, 247, 0.96);
+  border: 2.5px dashed #b8a088;
+  box-shadow:
+    0 8px 32px rgba(60, 58, 55, 0.18),
+    0 2px 6px rgba(60, 58, 55, 0.08);
+  font-size: 12px;
+  line-height: 1.4;
+  color: #3c3a37;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  animation: puzzle-ghost-appear 0.2s ease-out;
+  cursor: grabbing;
+}
+
+.drag-ghost .ghost-type {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  margin-bottom: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drag-ghost .ghost-content {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-weight: 500;
+}
+
+/* 拖拽时 drop zone 发光 */
+@keyframes drop-zone-breathe {
+  0%, 100% { box-shadow: 0 0 16px 4px rgba(217, 119, 70, 0.15), inset 0 0 20px rgba(217, 119, 70, 0.05); }
+  50%      { box-shadow: 0 0 28px 8px rgba(217, 119, 70, 0.25), inset 0 0 32px rgba(217, 119, 70, 0.08); }
+}
+
+.drop-zone {
+  border: 2px dashed rgba(60, 58, 55, 0.15);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.drop-zone-active {
+  border-color: #d97746;
+  background: rgba(217, 119, 70, 0.06);
+  animation: drop-zone-breathe 1.5s ease-in-out infinite;
+}
+
+.drop-zone-active .drop-zone-icon {
+  animation: bounce 0.6s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* 咬合动画 — 放下时碎片"咬入" */
+@keyframes puzzle-snap {
+  0%   { transform: scale(1.05); opacity: 0.7; }
+  30%  { transform: scale(0.92); opacity: 1; }
+  60%  { transform: scale(1.03); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.puzzle-snap {
+  animation: puzzle-snap 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ======== W3-2: 移动端拼合动画 ======== */
+
+/* 长按选中卡片发光 */
+@keyframes mobile-card-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 70, 0.35), 0 2px 12px rgba(217, 119, 70, 0.15); }
+  50%      { box-shadow: 0 0 0 8px rgba(217, 119, 70, 0.12), 0 2px 16px rgba(217, 119, 70, 0.25); }
+}
+
+.mobile-card-selected {
+  animation: mobile-card-pulse 1.2s ease-in-out infinite;
+  border-color: #d97746 !important;
+  background: rgba(217, 119, 70, 0.08) !important;
+  transform: scale(1.02);
+  z-index: 10;
+  position: relative;
+}
+
+/* 移动端投放区弹跳吸引注意 */
+@keyframes mobile-drop-bounce {
+  0%, 100% { transform: scale(1); }
+  20%      { transform: scale(1.04); }
+  50%      { transform: scale(0.98); }
+  70%      { transform: scale(1.02); }
+}
+
+.mobile-drop-bounce {
+  animation: mobile-drop-bounce 0.6s ease-in-out;
+  border-color: #d97746 !important;
+  background: rgba(217, 119, 70, 0.08) !important;
+  border-style: solid !important;
+}
+
+.mobile-drop-zone {
+  border: 2px dashed rgba(217, 119, 70, 0.45);
+  border-radius: 16px;
+  background: rgba(217, 119, 70, 0.03);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mobile-drop-zone:active {
+  background: rgba(217, 119, 70, 0.1);
+  border-color: #d97746;
+}
+
+/* 手机端咬合涟漪 */
+@keyframes mobile-snap-ripple {
+  0%   { transform: scale(0.3); opacity: 0.9; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.mobile-snap-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(217,119,70,0.4) 0%, rgba(217,119,70,0) 70%);
+  animation: mobile-snap-ripple 0.8s ease-out forwards;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════
+   W3-3: 拼图板 — 木纹背景 + 拼图片拖拽/旋转/堆叠
+   ═══════════════════════════════════════════════════ */
+
+/* 木纹纹理（CSS 生成，零依赖） */
+.puzzle-board {
+  border-radius: 20px;
+  border: 3px solid rgba(139, 119, 90, 0.2);
+  background: linear-gradient(180deg, #f5efe0 0%, #ede0cc 35%, #e8d9c0 70%, #e4d3b6 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    0 4px 24px rgba(60,58,55,0.1);
+}
+
+.puzzle-board-texture {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    /* 木纹年轮 — 横向纹理 */
+    repeating-linear-gradient(
+      180deg,
+      transparent,
+      transparent 3px,
+      rgba(139, 119, 90, 0.04) 3px,
+      rgba(139, 119, 90, 0.04) 5px,
+      transparent 5px,
+      transparent 7px
+    ),
+    /* 纵向微纹 */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 12px,
+      rgba(180, 160, 130, 0.02) 12px,
+      rgba(180, 160, 130, 0.02) 14px
+    ),
+    /* 木纹瘤节点（伪随机分布） */
+    radial-gradient(ellipse 18px 8px at 15% 30%, rgba(160, 140, 110, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 14px 6px at 72% 58%, rgba(160, 140, 110, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 22px 9px at 45% 78%, rgba(160, 140, 110, 0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 16px 7px at 88% 22%, rgba(160, 140, 110, 0.07) 0%, transparent 70%);
+  opacity: 0.7;
+}
+
+.puzzle-board-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 拼图板上的拼图片 — 阴影加重，更像实物放在木板上 */
+.puzzle-board-piece {
+  user-select: none;
+  box-shadow:
+    0 3px 10px rgba(60, 58, 55, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.puzzle-board-piece:hover {
+  box-shadow:
+    0 8px 28px rgba(60, 58, 55, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.puzzle-board-piece:active {
+  cursor: grabbing !important;
+  box-shadow:
+    0 12px 36px rgba(60, 58, 55, 0.22),
+    0 3px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* 旋转动画提示 */
+@keyframes rotate-hint {
+  0%, 100% { transform: rotate(var(--rotation, 0deg)); }
+  25%  { transform: rotate(calc(var(--rotation, 0deg) + 3deg)); }
+  75%  { transform: rotate(calc(var(--rotation, 0deg) - 3deg)); }
+}
+
+/* ===== W3-4: 边框引导模式 ===== */
+
+/* 引导轮廓：虚线边框，呼吸动画 */
+.puzzle-guide-outline {
+  position: absolute;
+  border: 2px dashed rgba(217, 119, 70, 0.45);
+  border-radius: 18px;
+  background: rgba(217, 119, 70, 0.05);
+  pointer-events: none;
+  z-index: 5;
+  animation: guide-breathe 2.2s ease-in-out infinite;
+}
+
+/* 四个方向的引导轮廓各自延迟，形成波浪流动感 */
+.puzzle-guide-outline:nth-child(1) { animation-delay: 0s; }
+.puzzle-guide-outline:nth-child(2) { animation-delay: 0.55s; }
+.puzzle-guide-outline:nth-child(3) { animation-delay: 1.1s; }
+.puzzle-guide-outline:nth-child(4) { animation-delay: 1.65s; }
+
+@keyframes guide-breathe {
+  0%, 100% {
+    border-color: rgba(217, 119, 70, 0.25);
+    background: rgba(217, 119, 70, 0.02);
+    box-shadow: 0 0 0px rgba(217, 119, 70, 0);
+  }
+  50% {
+    border-color: rgba(217, 119, 70, 0.55);
+    background: rgba(217, 119, 70, 0.08);
+    box-shadow: 0 0 14px rgba(217, 119, 70, 0.15);
+  }
+}
+
+/* 接近时的咬合高亮区域 */
+.puzzle-guide-snap-zone {
+  border: 3px solid rgba(217, 119, 70, 0.65) !important;
+  background: rgba(217, 119, 70, 0.14) !important;
+  box-shadow: 0 0 22px rgba(217, 119, 70, 0.25) !important;
+  animation: snap-zone-pulse 0.7s ease-in-out infinite !important;
+}
+
+@keyframes snap-zone-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(217, 119, 70, 0.18); }
+  50% { box-shadow: 0 0 28px rgba(217, 119, 70, 0.38); }
+}
+
+/* 拼图片之间的接近连接线 */
+.puzzle-proximity-link {
+  position: absolute;
+  pointer-events: none;
+  z-index: 6;
+  border-top: 1.5px dashed rgba(217, 119, 70, 0.3);
+  animation: link-fade 1.8s ease-in-out infinite;
+}
+
+@keyframes link-fade {
+  0%, 100% { opacity: 0.35; border-color: rgba(217, 119, 70, 0.25); }
+  50% { opacity: 0.8; border-color: rgba(217, 119, 70, 0.5); }
+}
+
+/* 近了！提示文字 */
+.puzzle-guide-hint {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(217, 119, 70, 0.6);
+  pointer-events: none;
+  z-index: 7;
+  animation: hint-pop 1.5s ease-in-out infinite;
+  white-space: nowrap;
+}
+
+@keyframes hint-pop {
+  0%, 100% { opacity: 0.3; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-4px); }
+}
+
+/* ===== W3-5: 参考图功能 ===== */
+
+/* 参考图目标选择器 */
+.reference-selector {
+  background: linear-gradient(135deg, rgba(255,255,255,0.6), rgba(255,245,235,0.5));
+  border: 1px solid rgba(217, 119, 70, 0.15);
+  border-radius: 14px;
+  padding: 12px 16px;
+  transition: all 0.3s ease;
+}
+
+.reference-selector:focus-within {
+  border-color: rgba(217, 119, 70, 0.35);
+  box-shadow: 0 0 0 3px rgba(217, 119, 70, 0.06);
+}
+
+.reference-goal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,0.6);
+  color: rgba(60,58,55,0.55);
+}
+
+.reference-goal-chip:hover {
+  border-color: rgba(217, 119, 70, 0.3);
+  color: rgba(217, 119, 70, 0.8);
+  background: rgba(255,245,235,0.6);
+}
+
+.reference-goal-chip.active {
+  background: linear-gradient(135deg, rgba(217, 119, 70, 0.12), rgba(232, 168, 96, 0.08));
+  border-color: rgba(217, 119, 70, 0.4);
+  color: #d97746;
+  font-weight: 600;
+  box-shadow: 0 1px 6px rgba(217, 119, 70, 0.1);
+}
+
+/* 参考图覆盖层容器 */
+.reference-overlay-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+
+/* 参考图目标区域 */
+.reference-target-zone {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  max-width: 480px;
+  min-height: 200px;
+  background: linear-gradient(135deg,
+    rgba(217, 119, 70, 0.07) 0%,
+    rgba(232, 168, 96, 0.05) 30%,
+    rgba(217, 119, 70, 0.04) 60%,
+    rgba(255, 245, 235, 0.12) 100%
+  );
+  border: 2px dashed rgba(217, 119, 70, 0.28);
+  border-radius: 24px;
+  animation: reference-zone-breathe 4s ease-in-out infinite;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  box-shadow: 
+    inset 0 0 80px rgba(217, 119, 70, 0.06),
+    0 0 60px rgba(217, 119, 70, 0.04);
+}
+
+@keyframes reference-zone-breathe {
+  0%, 100% { border-color: rgba(217, 119, 70, 0.25); box-shadow: inset 0 0 80px rgba(217, 119, 70, 0.04), 0 0 60px rgba(217, 119, 70, 0.03); }
+  50% { border-color: rgba(217, 119, 70, 0.4); box-shadow: inset 0 0 100px rgba(217, 119, 70, 0.08), 0 0 80px rgba(217, 119, 70, 0.06); }
+}
+
+/* 参考图目标区域边缘拼图装饰 */
+.reference-zone-edge {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-color: rgba(217, 119, 70, 0.2);
+  pointer-events: none;
+  animation: reference-edge-pulse 3s ease-in-out infinite;
+}
+
+.reference-zone-edge.top-left {
+  top: -8px;
+  left: -8px;
+  border-width: 0 0 18px 18px;
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+}
+
+.reference-zone-edge.top-right {
+  top: -8px;
+  right: -8px;
+  border-width: 0 18px 18px 0;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+}
+
+.reference-zone-edge.bottom-left {
+  bottom: -8px;
+  left: -8px;
+  border-width: 18px 0 0 18px;
+  border-left-color: transparent;
+  border-top-color: transparent;
+}
+
+.reference-zone-edge.bottom-right {
+  bottom: -8px;
+  right: -8px;
+  border-width: 18px 18px 0 0;
+  border-right-color: transparent;
+  border-top-color: transparent;
+}
+
+@keyframes reference-edge-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* 参考图目标文字 */
+.reference-goal-text {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(217, 119, 70, 0.35);
+  text-align: center;
+  line-height: 1.8;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 30px rgba(217, 119, 70, 0.1);
+  max-width: 360px;
+  pointer-events: none;
+  animation: reference-text-shimmer 6s ease-in-out infinite;
+}
+
+@keyframes reference-text-shimmer {
+  0%, 100% { color: rgba(217, 119, 70, 0.3); }
+  50% { color: rgba(217, 119, 70, 0.5); }
+}
+
+.reference-goal-subtitle {
+  font-size: 12px;
+  color: rgba(60, 58, 55, 0.2);
+  text-align: center;
+  margin-top: 12px;
+  font-style: italic;
+}
+
+/* 缺口高亮指示器 — 参考图区域内没有被拼图片覆盖的位置 */
+.reference-gap {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 80, 60, 0.2), transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+  animation: gap-ripple 2.5s ease-in-out infinite;
+}
+
+@keyframes gap-ripple {
+  0%, 100% { 
+    transform: scale(0.8); 
+    opacity: 0.3;
+    box-shadow: 0 0 8px rgba(255, 80, 60, 0.15);
+  }
+  50% { 
+    transform: scale(1.3); 
+    opacity: 0.7;
+    box-shadow: 0 0 20px rgba(255, 80, 60, 0.25);
+  }
+}
+
+/* 参考图覆盖显示拼图片时降低其透明度（让参考图可见） */
+.reference-active .puzzle-board-piece {
+  background-color: rgba(255, 252, 247, 0.88) !important;
+}
+
+.reference-active .puzzle-board-piece:hover {
+  background-color: rgba(255, 252, 247, 0.95) !important;
+}
+
+/* 覆盖度标签 */
+.reference-coverage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: linear-gradient(135deg, rgba(217, 119, 70, 0.08), rgba(232, 168, 96, 0.05));
+  color: rgba(217, 119, 70, 0.7);
+  border: 1px solid rgba(217, 119, 70, 0.2);
+}
+
+/* ====== 拼图片智能组块卡片 ====== */
+.cluster-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.cluster-card:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+.cluster-card:active {
+  transform: translateY(0);
+}
+
+/* 组块展开内容滑动 */
+.cluster-expand {
+  overflow: hidden;
+}
+
+/* ====== 缺口拼图片卡片 ====== */
+.gap-card {
+  position: relative;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border: 2px dashed #d0d0d0;
+  padding: 14px 16px;
+  transition: all 0.3s ease;
+  cursor: default;
+  overflow: hidden;
+}
+.gap-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  opacity: 0.4;
+}
+.gap-card::after {
+  content: '?';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 28px;
+  font-weight: 700;
+  opacity: 0.08;
+  color: #666;
+  font-family: 'Noto Serif SC', serif;
+}
+.gap-card:hover {
+  box-shadow: 0 3px 16px rgba(0,0,0,0.06);
+  border-color: #bbb;
+}
+.gap-card .gap-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(150,150,150,0.15);
+  color: #888;
+  margin-bottom: 6px;
+}
+.gap-card .gap-content {
+  font-size: 13px;
+  color: #777;
+  line-height: 1.5;
+  padding-right: 30px;
+}
+.gap-card .gap-hint {
+  font-size: 10px;
+  color: #aaa;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* 缺口区域呼吸动画 */
+@keyframes gap-section-breathe {
+  0%, 100% { border-color: rgba(180,160,140,0.15); }
+  50% { border-color: rgba(180,160,140,0.3); }
+}
+.gap-section {
+  animation: gap-section-breathe 4s ease-in-out infinite;
+}
+
+/* ===== W5-3: 试探反馈机制 ===== */
+
+/* 试探卡片：半透明虚线边框 + 琥珀色呼吸 */
+@keyframes trial-breathe {
+  0%, 100% {
+    border-color: rgba(217, 158, 70, 0.3);
+    background: rgba(217, 158, 70, 0.04);
+    box-shadow: 0 0 0px rgba(217, 158, 70, 0);
+  }
+  50% {
+    border-color: rgba(217, 158, 70, 0.6);
+    background: rgba(217, 158, 70, 0.1);
+    box-shadow: 0 0 12px rgba(217, 158, 70, 0.15);
+  }
+}
+
+.trial-card {
+  border-style: dashed !important;
+  border-color: rgba(217, 158, 70, 0.45) !important;
+  background: rgba(217, 158, 70, 0.06) !important;
+  opacity: 0.82;
+  cursor: pointer !important;
+  animation: trial-breathe 1.8s ease-in-out infinite;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.trial-card:hover {
+  opacity: 0.95;
+  box-shadow: 0 2px 16px rgba(217, 158, 70, 0.2);
+}
+
+/* 试探卡片被弹开：轻微抖动 + 淡出 */
+@keyframes trial-shake-out {
+  0% { transform: translateX(0); opacity: 0.82; }
+  15% { transform: translateX(-6px); opacity: 0.7; }
+  30% { transform: translateX(5px); opacity: 0.6; }
+  45% { transform: translateX(-3px); opacity: 0.45; }
+  60% { transform: translateX(2px); opacity: 0.3; }
+  75% { transform: translateX(-1px); opacity: 0.18; }
+  100% { transform: translateX(0); opacity: 0; }
+}
+
+.trial-bounce-out {
+  animation: trial-shake-out 0.5s ease-out forwards !important;
+  pointer-events: none !important;
+}
+
+/* 试探确认吸入：放大 + 发光 */
+@keyframes trial-snap-in {
+  0% { transform: scale(0.95); opacity: 0.7; }
+  40% { transform: scale(1.03); opacity: 1; }
+  70% { transform: scale(0.98); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.trial-snap-in {
+  animation: trial-snap-in 0.4s ease-out;
+}
+
+/* "弹开了" 文字轻颤 */
+@keyframes bounce-text-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+.trial-bounce-text {
+  animation: bounce-text-shake 0.3s ease-in-out 2;
+}
+
+/* 预览指示器脉冲 */
+@keyframes trial-indicator-pulse {
+  0%, 100% { box-shadow: 0 0 0px rgba(217, 158, 70, 0); }
+  50% { box-shadow: 0 0 8px rgba(217, 158, 70, 0.25); }
+}

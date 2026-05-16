@@ -1,0 +1,90 @@
+{
+  "abTest": {
+    "enabled": true,
+    "versions": {
+      "A": {
+        "title": "你散落的能力碎片，可能早就够开一门课了",
+        "subtitle": "12年讲台 + 日更3年 + 提分15分 = 作文训练营创始人？AI帮你发现你没看见的自己",
+        "cta": "免费试用 →"
+      },
+      "B": {
+        "title": "你可能会发现\n你早就会了",
+        "subtitle": "不是让你学新东西，是帮你看见已经长在身上的能力。碎片输入 → AI融合 → 发现隐藏的你可能",
+        "cta": "看看我有什么 →"
+      }
+    },
+    "bucketing": {
+      "algorithm": "hash-mod",
+      "split": [50, 50]
+    },
+    "tracking": {
+      "events": ["page_view", "cta_click", "register_start", "first_fragment_add"]
+    }
+  },
+  "painSection": {
+    "enabled": true,
+    "versions": {
+      "A": {
+        "title": "你是不是也有这种感觉？",
+        "subtitle": "学了一堆东西、存了很多笔记、想做副业...但不知道怎么开始",
+        "cta": "看看我能拼出什么 →"
+      },
+      "B": {
+        "title": "90%的人不知道自己已经会了什么",
+        "subtitle": "你以为自己没技能，其实你只是没把它们拼在一起看",
+        "cta": "发现我的隐藏能力 →"
+      }
+    },
+    "bucketing": {
+      "algorithm": "hash-mod",
+      "split": [50, 50]
+    },
+    "tracking": {
+      "events": ["page_view", "cta_click"]
+    }
+  },
+  "socialProof": {
+    "enabled": true,
+    "versions": {
+      "A": {
+        "title": "他们已经开始拼了",
+        "subtitle": "已有 1,200+ 用户发现自己的隐藏能力组合",
+        "cta": "加入他们 →"
+      },
+      "B": {
+        "title": "从老师到博主，从骑手到探店达人",
+        "subtitle": "看看真实用户如何用已有能力拼出新职业",
+        "cta": "看真实案例 →"
+      }
+    },
+    "bucketing": {
+      "algorithm": "hash-mod",
+      "split": [50, 50]
+    },
+    "tracking": {
+      "events": ["page_view", "cta_click"]
+    }
+  },
+  "pricing": {
+    "enabled": true,
+    "versions": {
+      "A": {
+        "title": "开始融合",
+        "subtitle": "不需要信用卡，选择你的职业，2分钟完成入门",
+        "cta": "免费试用 →"
+      },
+      "B": {
+        "title": "先免费拼一次，再决定要不要继续",
+        "subtitle": "25次免费融合，足够你发现第一个能力组合",
+        "cta": "免费开始 →"
+      }
+    },
+    "bucketing": {
+      "algorithm": "hash-mod",
+      "split": [50, 50]
+    },
+    "tracking": {
+      "events": ["page_view", "cta_click", "register_start"]
+    }
+  }
+}

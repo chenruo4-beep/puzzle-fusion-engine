@@ -1,0 +1,18 @@
+Found at index 33212
+Snippet:
+               : 'border-warm-dark/15'
+                  }`}>
+                    {isSelected ? '✓' : ''}
+                  </span>
+                  <span className="truncate">{f.content}</span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* 融合按钮 */}
+      <div className="pt-2 p
+
+Line: 869

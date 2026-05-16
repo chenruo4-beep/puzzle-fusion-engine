@@ -1,0 +1,93 @@
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1959ms
+ ○ Compiling /dashboard/fragments ...
+ ✓ Compiled /dashboard/fragments in 2.9s (534 modules)
+ GET /dashboard/fragments 200 in 3171ms
+ ✓ Compiled in 285ms (259 modules)
+ ✓ Compiled in 177ms (259 modules)
+ ✓ Compiled in 403ms (537 modules)
+ GET /dashboard/fragments 200 in 151ms
+ ✓ Compiled in 555ms (537 modules)
+ GET /dashboard/fragments 200 in 120ms
+ GET /dashboard/fragments 200 in 40ms
+ ✓ Compiled in 258ms (260 modules)
+ ✓ Compiled /dashboard/history in 486ms (531 modules)
+ GET /dashboard/history 200 in 659ms
+ ✓ Compiled in 263ms (263 modules)
+ ✓ Compiled in 450ms (540 modules)
+ ✓ Compiled in 394ms (540 modules)
+ ✓ Compiled in 605ms (550 modules)
+ ✓ Compiled in 226ms (542 modules)
+ GET /dashboard/fragments 200 in 88ms
+ ✓ Compiled in 267ms (264 modules)
+ ✓ Compiled in 243ms (264 modules)
+ ✓ Compiled /dashboard/fusion in 389ms (535 modules)
+ GET /dashboard/fusion 200 in 554ms
+ ✓ Compiled in 271ms (266 modules)
+ ✓ Compiled in 172ms (266 modules)
+ ✓ Compiled in 213ms (266 modules)
+ ✓ Compiled in 201ms (266 modules)
+ ✓ Compiled in 153ms (266 modules)
+ ✓ Compiled in 175ms (266 modules)
+ ✓ Compiled in 200ms (266 modules)
+ ✓ Compiled in 140ms (266 modules)
+ ✓ Compiled / in 432ms (534 modules)
+ GET / 200 in 588ms
+ ✓ Compiled in 266ms (267 modules)
+ ✓ Compiled in 279ms (267 modules)
+ ✓ Compiled in 231ms (267 modules)
+ ✓ Compiled in 189ms (267 modules)
+ ✓ Compiled in 208ms (267 modules)
+ ✓ Compiled in 121ms (267 modules)
+ ✓ Compiled in 524ms (547 modules)
+ ✓ Compiled in 333ms (268 modules)
+ ✓ Compiled in 240ms (268 modules)
+ ✓ Compiled in 133ms (268 modules)
+ ✓ Compiled in 185ms (268 modules)
+ ✓ Compiled in 336ms (547 modules)
+ ✓ Compiled in 232ms (268 modules)
+ ✓ Compiled in 161ms (268 modules)
+ ✓ Compiled in 148ms (268 modules)
+ ✓ Compiled in 289ms (268 modules)
+ ✓ Compiled in 234ms (268 modules)
+ ✓ Compiled in 262ms (268 modules)
+ ✓ Compiled in 411ms (547 modules)
+ ✓ Compiled in 200ms (268 modules)
+ ✓ Compiled in 312ms (268 modules)
+ ✓ Compiled in 195ms (268 modules)
+ ✓ Compiled in 522ms (552 modules)
+ ✓ Compiled in 244ms (273 modules)
+ ✓ Compiled in 141ms (273 modules)
+ ✓ Compiled in 727ms (552 modules)
+ ✓ Compiled in 1023ms (554 modules)
+ GET /dashboard/fragments 200 in 691ms
+ GET /dashboard/fragments 200 in 97ms
+ ✓ Compiled in 628ms (274 modules)
+ GET /dashboard/fragments 200 in 49ms
+ ✓ Compiled in 483ms (274 modules)
+ GET /dashboard/fragments 200 in 44ms
+ ✓ Compiled in 478ms (554 modules)
+ GET /dashboard/fragments 200 in 158ms
+ ✓ Compiled in 237ms (274 modules)
+ ✓ Compiled in 151ms (274 modules)
+ GET /dashboard/fragments 200 in 168ms
+ ✓ Compiled in 718ms (557 modules)
+ GET /dashboard/fragments 200 in 155ms
+ ✓ Compiled in 422ms (557 modules)
+ GET /dashboard/fragments 200 in 283ms
+ ✓ Compiled in 282ms (557 modules)
+ GET /dashboard/fragments 200 in 134ms
+ ✓ Compiled in 225ms (275 modules)
+ GET /dashboard/fragments 200 in 56ms
+ ✓ Compiled /_not-found in 332ms (546 modules)
+ GET /_next/static/css/app/layout.css?v=1778786690996 404 in 464ms
+ GET /_next/static/chunks/main-app.js?v=1778786690996 404 in 470ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 462ms
+ GET /_next/static/chunks/app/dashboard/fragments/page.js 404 in 35ms
+ GET /_next/static/chunks/app/dashboard/layout.js 404 in 27ms
+ ✓ Compiled in 391ms (560 modules)
+ ✓ Compiled in 130ms (275 modules)
+[?25h
