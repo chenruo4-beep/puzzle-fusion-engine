@@ -6,7 +6,8 @@ import { Skeleton, SkeletonCard, SkeletonHeader } from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
-import { playClickSound, playPiecePlaceSound } from '@/hooks/useSound';
+import { playClickSound, playPiecePlaceSound, playFusionSound } from '@/hooks/useSound';
+import PuzzleFusionAnimation from '@/components/PuzzleFusionAnimation';
 import { useDragPuzzle } from '@/hooks/useDragPuzzle';
 import { useMobilePuzzle } from '@/hooks/useMobilePuzzle';
 
@@ -89,11 +90,19 @@ export default function FusionPage() {
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [feedbackState, setFeedbackState] = useState<'idle' | 'useful' | 'not_useful'>('idle');
+  const [showFeedbackReason, setShowFeedbackReason] = useState(false);
+  const [feedbackReason, setFeedbackReason] = useState('');
+  const FEEDBACK_REASONS = [
+    '方向不符合我的预期',
+    '建议不够具体',
+    '碎片匹配不准确',
+    '结果太泛泛',
+    '其他原因',
+  ];
 
-  // W2-2: 融合飞入动画
-  const [flyingFragments, setFlyingFragments] = useState<Array<{id: string; x: number; y: number; w: number; h: number; content: string; type: string; color: string}> | null>(null);
-  const [showMergeGlow, setShowMergeGlow] = useState(false);
-  const [mergeSparkles, setMergeSparkles] = useState<Array<{id: number; sx: number; sy: number; color: string; delay: number}>>([]);
+  // W5-4: 拼图融合可视化动画
+  const [showFusionAnimation, setShowFusionAnimation] = useState(false);
+  const [fusionAnimationFragments, setFusionAnimationFragments] = useState<Array<{id: string; content: string; type: string; color: string}>>([]);
 
   async function handleFeedback(vote: 'useful' | 'not_useful') {
     if (!result || feedbackState !== 'idle') return;
@@ -101,14 +110,40 @@ export default function FusionPage() {
       toast('请先保存结果再提交反馈', 'warning');
       return;
     }
+    if (vote === 'not_useful') {
+      setShowFeedbackReason(true);
+      return;
+    }
+    // useful: 直接提交
     try {
       const res = await fetch(`${API_BASE}/api/fusions/${result.id}/feedback`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ feedback: vote }),
+        body: JSON.stringify({ feedback: vote, source: 'web' }),
       });
-      if (res.ok) setFeedbackState(vote);
-      else toast('反馈提交失败', 'error');
+      if (res.ok) {
+        setFeedbackState(vote);
+        toast('感谢反馈！我们会持续优化', 'success');
+      } else toast('反馈提交失败', 'error');
+    } catch {
+      toast('反馈提交失败', 'error');
+    }
+  }
+
+  async function submitFeedbackWithReason(reason: string) {
+    if (!result || !result.id) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/fusions/${result.id}/feedback`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback: 'not_useful', reason, source: 'web' }),
+      });
+      if (res.ok) {
+        setFeedbackState('not_useful');
+        setShowFeedbackReason(false);
+        setFeedbackReason('');
+        toast('反馈已记录，我们会据此优化', 'success');
+      } else toast('反馈提交失败', 'error');
     } catch {
       toast('反馈提交失败', 'error');
     }
@@ -125,6 +160,9 @@ export default function FusionPage() {
   const [goalError, setGoalError] = useState('');
   const PLACEHOLDER_HINTS = ['例：我想找到一份远程工作...','例：我想开一家属于自己的小店...','例：我想利用现有技能做副业...','例：我想找到最适合我的发展方向...','例：我想把爱好变成事业...',];
   const [placeholderHint, setPlaceholderHint] = useState(PLACEHOLDER_HINTS[0]);
+  // 筛选状态：按类型筛选显示（修复bug：原逻辑点击分类会全选碎片）
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+
   const [recModal, setRecModal] = useState<{
     open: boolean;
     target: Fragment | null;
@@ -182,6 +220,7 @@ export default function FusionPage() {
     let i = 0;
     const interval = setInterval(() => { i = (i + 1) % PLACEHOLDER_HINTS.length; setPlaceholderHint(PLACEHOLDER_HINTS[i]); }, 2500);
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goal.length]);
 
   const onboardingHandled = useRef(false);
@@ -355,12 +394,14 @@ export default function FusionPage() {
   // W3-1: 拖拽拼合（桌面端）→ 进入试探预览
   const handleDragDrop = useCallback((fragId: string) => {
     startTrial(fragId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const { drag, isOverDrop, dropzoneRef, onPointerDown: onDragPointerDown } = useDragPuzzle(handleDragDrop);
 
   // W3-2: 移动端拼合操作 → 进入试探预览
   const handleMobileSnap = useCallback((fragId: string) => {
     startTrial(fragId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const {
     snap: mobileSnap,
@@ -383,43 +424,40 @@ export default function FusionPage() {
     };
     window.addEventListener('puzzle:trial-bounce', onTrialBounce);
     return () => window.removeEventListener('puzzle:trial-bounce', onTrialBounce);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trialFragmentId]);
 
-  function handleQuickSelectType(type: string) {
-    setSelectedIds(prev => {
+  // 修复bug：分类按钮改为筛选显示，不再全选碎片
+  function toggleFilter(type: string) {
+    setActiveFilters(prev => {
       const next = new Set(prev);
-      const remaining = MAX_FRAGMENTS - next.size;
-      if (remaining <= 0) return prev;
-      (grouped[type] || []).slice(0, remaining).forEach(f => next.add(f.id));
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
       return next;
     });
   }
 
-  function handleQuickDeselectType(type: string) {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      (grouped[type] || []).forEach(f => next.delete(f.id));
-      return next;
-    });
+  function clearAllFilters() {
+    setActiveFilters(new Set());
   }
 
   // 来自 onboarding 的自动融合（直接用 localStorage 中的碎片）
   const triggerOnboardingFusion = async (frags: FragmentItem[], prof: string, icon: string) => {
     clearTrial(); // W5-3: 融合开始时清除试探
 
-    // W2-2: 简版飞入动画（onboarding无DOM所以只显示合并光晕）
-    const sparkColors = ['#d97746', '#e8a860', '#f0c078', '#ffd700', '#ffaa55'];
-    const sparkles = Array.from({ length: 12 }, (_, i) => ({
-      id: i, sx: (Math.random() - 0.5) * 100, sy: (Math.random() - 0.5) * 100 - 20,
-      color: sparkColors[i % sparkColors.length], delay: Math.random() * 0.25,
+    // W5-4: onboarding 也使用拼图融合可视化
+    const onboardingAnimFrags = frags.map((f, i) => ({
+      id: `onboarding-${i}`,
+      content: f.content.slice(0, 20),
+      type: f.type,
+      color: TYPE_COLORS[f.type] || '#b8a088',
     }));
-    setShowMergeGlow(true);
-    setMergeSparkles(sparkles);
-    playClickSound();
+    setFusionAnimationFragments(onboardingAnimFrags);
+    setShowFusionAnimation(true);
+    playFusionSound();
 
-    await new Promise(r => setTimeout(r, 800));
-    setShowMergeGlow(false);
-    setMergeSparkles([]);
+    await new Promise(r => setTimeout(r, 2500));
+    setShowFusionAnimation(false);
 
     setIsFusing(true);
     setError(null);
@@ -485,6 +523,12 @@ export default function FusionPage() {
     if (selectedIds.size === 0) return;
     if (goalError) return; // 目标验证失败时不提交
 
+    // #26: 首次融合显示免责声明弹窗
+    if (!localStorage.getItem('fusion_disclaimer_accepted')) {
+      setShowDisclaimer(true);
+      return;
+    }
+
     // W2-2: 碎片飞入动画 — 先捕获DOM位置
     const fragmentEls = document.querySelectorAll('[data-fragment-id]');
     const flyData: Array<{id: string; x: number; y: number; w: number; h: number; content: string; type: string; color: string}> = [];
@@ -509,32 +553,22 @@ export default function FusionPage() {
     });
 
     if (flyData.length > 0) {
-      // 生成火花粒子
-      const sparkColors = ['#d97746', '#e8a860', '#f0c078', '#ffd700', '#ffaa55'];
-      const sparkles = Array.from({ length: 16 }, (_, i) => ({
-        id: i,
-        sx: (Math.random() - 0.5) * 120,
-        sy: (Math.random() - 0.5) * 120 - 30,
-        color: sparkColors[i % sparkColors.length],
-        delay: Math.random() * 0.3,
+      // W5-4: 启动拼图融合可视化动画
+      const animFrags = flyData.map(f => ({
+        id: f.id,
+        content: f.content,
+        type: f.type,
+        color: f.color,
       }));
-
-      setFlyingFragments(flyData);
-      setMergeSparkles(sparkles);
-      playClickSound();
-
-      // 碎片飞入完成后显示合并光晕
-      setTimeout(() => {
-        setShowMergeGlow(true);
-      }, 700);
+      setFusionAnimationFragments(animFrags);
+      setShowFusionAnimation(true);
+      playFusionSound();
 
       // 动画全部完成后进入加载状态
       setTimeout(() => {
-        setFlyingFragments(null);
-        setShowMergeGlow(false);
-        setMergeSparkles([]);
+        setShowFusionAnimation(false);
         proceedWithFusion();
-      }, 1300);
+      }, 2600);
     } else {
       proceedWithFusion();
     }
@@ -946,10 +980,75 @@ export default function FusionPage() {
             </button>
           </div>
 
-          {/* 免责声明 */}
-          <div className="rounded-xl bg-warm-dark/3 border border-warm-dark/5 p-3 text-center">
-            <p className="text-xs text-warm-dark/30 leading-relaxed">
-              ⚠️ 以上内容仅为 AI 生成的灵感建议，不构成投资或商业指导。请结合自身情况判断风险，谨慎决策。
+          {/* 反馈原因弹窗 */}
+          {showFeedbackReason && (
+            <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4">
+                <h3 className="text-lg font-bold text-warm-dark">💬 帮助我们改进</h3>
+                <p className="text-sm text-warm-dark/60">这个结果为什么没有帮助到你？</p>
+                <div className="space-y-2">
+                  {FEEDBACK_REASONS.map((reason) => (
+                    <button
+                      key={reason}
+                      onClick={() => submitFeedbackWithReason(reason)}
+                      className={`w-full text-left px-4 py-2.5 rounded-xl border text-sm transition-all ${
+                        feedbackReason === reason
+                          ? 'bg-warm-accent/10 border-warm-accent/30 text-warm-dark'
+                          : 'bg-warm-light/40 border-warm-dark/10 text-warm-dark/70 hover:border-warm-accent/30'
+                      }`}
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+                <div className="pt-2 border-t border-warm-dark/10">
+                  <textarea
+                    value={feedbackReason}
+                    onChange={(e) => setFeedbackReason(e.target.value)}
+                    placeholder="其他原因（选填）..."
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-lg bg-warm-light/40 border border-warm-dark/10 text-sm text-warm-dark placeholder:text-warm-dark/30 focus:outline-none focus:border-warm-accent/30 resize-none"
+                  />
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => { setShowFeedbackReason(false); setFeedbackReason(''); }}
+                      className="flex-1 py-2 rounded-xl bg-warm-dark/5 text-warm-dark/50 text-sm hover:bg-warm-dark/10 transition-colors"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (feedbackReason.trim()) submitFeedbackWithReason(feedbackReason.trim());
+                        else toast('请选择或填写原因', 'warning');
+                      }}
+                      className="flex-1 py-2 rounded-xl bg-warm-accent text-white text-sm hover:bg-warm-accent/90 transition-colors"
+                    >
+                      提交反馈
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 免责声明 — 法律风险防护 */}
+          <div className="rounded-xl bg-warm-dark/3 border border-warm-dark/5 p-4 space-y-2">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-xs">⚠️</span>
+              <span className="text-xs font-bold text-warm-dark/40">法律免责声明</span>
+            </div>
+            <p className="text-[11px] text-warm-dark/30 leading-relaxed">
+              本工具基于人工智能生成内容，所有分析结果、建议和方向仅供灵感参考，
+              <strong className="text-warm-dark/40">不构成任何投资、理财、职业、法律或商业决策建议</strong>。
+              AI 输出可能存在偏差、遗漏或过时信息，不保证准确性、完整性或适用性。
+            </p>
+            <p className="text-[11px] text-warm-dark/30 leading-relaxed">
+              用户应结合自身实际情况、专业咨询和独立判断做出决策。
+              因使用本工具内容而产生的任何直接或间接损失，本平台不承担法律责任。
+              继续使用即表示您已阅读并理解上述声明。
+            </p>
+            <p className="text-[10px] text-warm-dark/20 text-center pt-1">
+              © 拼图融合引擎 · AI 生成内容仅供参考
             </p>
           </div>
         </div>
@@ -1063,75 +1162,13 @@ export default function FusionPage() {
 
   return (
     <div className="space-y-6">
-      {/* W2-2: 碎片飞入融合动画叠加层 */}
-      {flyingFragments && (
-        <>
-          {/* 半透明遮罩 */}
-          <div className="fusion-fly-overlay" />
-          {/* 每个碎片飞向屏幕中心 */}
-          {flyingFragments.map(frag => {
-            const centerX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
-            const centerY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
-            const flyX = centerX - frag.x;
-            const flyY = centerY - frag.y;
-            const spin = (Math.random() - 0.5) * 45;
-            return (
-              <div
-                key={frag.id}
-                className="flying-fragment"
-                style={{
-                  left: frag.x,
-                  top: frag.y,
-                  transform: `translate(-50%, -50%)`,
-                  '--fly-x': `${flyX}px`,
-                  '--fly-y': `${flyY}px`,
-                  '--spin': `${spin}deg`,
-                  '--fly-color': frag.color,
-                } as React.CSSProperties}
-              >
-                <span className="fly-type-badge" style={{ backgroundColor: frag.color }}>{frag.type}</span>
-                <span className="truncate">{frag.content}</span>
-              </div>
-            );
-          })}
-          {/* 合并中心光晕 */}
-          {showMergeGlow && (
-            <>
-              <div className="merge-center-point" />
-              {mergeSparkles.map(s => (
-                <div
-                  key={s.id}
-                  className="merge-spark-particle"
-                  style={{
-                    '--sx': `${s.sx}px`,
-                    '--sy': `${s.sy}px`,
-                    '--spark-color': s.color,
-                    animationDelay: `${s.delay}s`,
-                  } as React.CSSProperties}
-                />
-              ))}
-            </>
-          )}
-        </>
-      )}
-      {/* W2-2: 独立合并光晕（onboarding/无DOM飞入场景） */}
-      {!flyingFragments && showMergeGlow && (
-        <>
-          <div className="fusion-fly-overlay" />
-          <div className="merge-center-point" />
-          {mergeSparkles.map(s => (
-            <div
-              key={s.id}
-              className="merge-spark-particle"
-              style={{
-                '--sx': `${s.sx}px`,
-                '--sy': `${s.sy}px`,
-                '--spark-color': s.color,
-                animationDelay: `${s.delay}s`,
-              } as React.CSSProperties}
-            />
-          ))}
-        </>
+      {/* W5-4: 拼图融合可视化动画 */}
+      {showFusionAnimation && (
+        <PuzzleFusionAnimation
+          fragments={fusionAnimationFragments}
+          onComplete={() => setShowFusionAnimation(false)}
+          duration={2500}
+        />
       )}
       <div>
         <h1 className="text-2xl font-bold text-warm-dark">融合引擎</h1>
@@ -1394,34 +1431,43 @@ export default function FusionPage() {
             {selectedIds.size >= dbFragments.length ? '取消全选' : '全选'}
           </button>
         </div>
-        {/* 快速按类型选择 */}
-        <div className="flex flex-wrap gap-1.5">
+        {/* 按类型筛选显示（修复：不再全选碎片） */}
+        <div className="flex flex-wrap gap-1.5 items-center">
+          <span className="text-xs text-warm-dark/30 mr-1">筛选：</span>
           {Object.entries(grouped).map(([type, frags]) => {
-            const selectedCount = (frags || []).filter(f => selectedIds.has(f.id)).length;
+            const isActive = activeFilters.has(type);
             const allCount = (frags || []).length;
             return (
               <button
                 key={type}
-                onClick={() => selectedCount > 0 ? handleQuickDeselectType(type) : handleQuickSelectType(type)}
+                onClick={() => toggleFilter(type)}
                 className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
-                  selectedCount > 0
+                  isActive
                     ? 'bg-warm-accent/15 border-warm-accent/40 text-warm-accent font-medium'
                     : 'bg-white/50 border-warm-dark/10 text-warm-dark/50 hover:border-warm-dark/25'
                 }`}
               >
                 {type}
-                <span className={`ml-1 ${selectedCount > 0 ? 'font-bold' : ''}`}>
-                  {selectedCount > 0 ? `${selectedCount}/${allCount}` : allCount}
-                </span>
+                <span className="ml-1">{allCount}</span>
               </button>
             );
           })}
+          {activeFilters.size > 0 && (
+            <button
+              onClick={clearAllFilters}
+              className="text-xs text-warm-dark/30 hover:text-warm-accent transition-colors ml-1"
+            >
+              清除筛选
+            </button>
+          )}
         </div>
       </div>
 
-      {/* 碎片分组列表 */}
+      {/* 碎片分组列表（带筛选） */}
       <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
-        {Object.entries(grouped).map(([type, frags]) => (
+        {Object.entries(grouped)
+          .filter(([type]) => activeFilters.size === 0 || activeFilters.has(type))
+          .map(([type, frags]) => (
           <div key={type} className="space-y-1">
             <div className="flex items-center gap-2 px-1 mb-1">
               <span

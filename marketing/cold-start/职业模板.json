@@ -1,0 +1,284 @@
+{
+  "templates": [
+    {
+      "id": "teacher-side-hustle",
+      "name": "教师副业探索",
+      "category": "教育行业",
+      "target_user": "中小学教师、培训机构老师",
+      "pain_point": "工资固定，时间充裕但不知如何变现",
+      "fragments": [
+        {
+          "type": "skill",
+          "content": "擅长把复杂知识点讲简单",
+          "direction": "知识付费/在线课程"
+        },
+        {
+          "type": "resource",
+          "content": "积累了5年教学资料",
+          "direction": "资料变现/模板销售"
+        },
+        {
+          "type": "experience",
+          "content": "辅导过100+学生提分",
+          "direction": "一对一辅导/升学咨询"
+        },
+        {
+          "type": "interest",
+          "content": "喜欢写教育类文章",
+          "direction": "教育自媒体/公众号"
+        }
+      ],
+      "fusion_goal": "找到最适合教师的低门槛副业方向",
+      "suggested_fusions": [
+        "知识点讲解 + 在线课程 = 知识付费产品",
+        "教学资料 + 模板平台 = 被动收入",
+        "辅导经验 + 升学咨询 = 高单价服务"
+      ]
+    },
+    {
+      "id": "designer-freelance",
+      "name": "设计师自由职业",
+      "category": "设计创意",
+      "target_user": "平面设计师、UI设计师、插画师",
+      "pain_point": "想接私单但不知道去哪找客户",
+      "fragments": [
+        {
+          "type": "skill",
+          "content": "精通PS/AI/Figma",
+          "direction": "设计接单平台"
+        },
+        {
+          "type": "portfolio",
+          "content": "有20+完整案例作品",
+          "direction": "作品集展示/个人品牌"
+        },
+        {
+          "type": "network",
+          "content": "认识一些创业者朋友",
+          "direction": "转介绍获客"
+        },
+        {
+          "type": "interest",
+          "content": "喜欢研究设计趋势",
+          "direction": "设计教程/知识分享"
+        }
+      ],
+      "fusion_goal": "建立稳定的设计私单渠道",
+      "suggested_fusions": [
+        "设计技能 + 接单平台 = 稳定客户流",
+        "作品集 + 社交媒体 = 被动获客",
+        "行业人脉 + 转介绍 = 高信任订单"
+      ]
+    },
+    {
+      "id": "programmer-side-project",
+      "name": "程序员副业项目",
+      "category": "技术开发",
+      "target_user": "前端/后端/全栈工程师",
+      "pain_point": "技术强但不知道做什么产品能赚钱",
+      "fragments": [
+        {
+          "type": "skill",
+          "content": "能独立开发完整产品",
+          "direction": "SaaS产品/工具开发"
+        },
+        {
+          "type": "experience",
+          "content": "解决过公司内部效率问题",
+          "direction": "B2B工具/企业插件"
+        },
+        {
+          "type": "interest",
+          "content": "关注AI和自动化",
+          "direction": "AI工具/自动化脚本"
+        },
+        {
+          "type": "resource",
+          "content": "有服务器和域名资源",
+          "direction": "独立产品部署"
+        }
+      ],
+      "fusion_goal": "找到技术变现的最短路径",
+      "suggested_fusions": [
+        "开发能力 + 痛点工具 = SaaS产品",
+        "AI兴趣 + 自动化 = AI服务",
+        "内部经验 + 通用化 = B2B工具"
+      ]
+    },
+    {
+      "id": "writer-monetization",
+      "name": "写作变现路径",
+      "category": "内容创作",
+      "target_user": "公众号作者、知乎答主、小说写手",
+      "pain_point": "有写作能力但变现效率低",
+      "fragments": [
+        {
+          "type": "skill",
+          "content": "日更3000字无压力",
+          "direction": "多平台分发"
+        },
+        {
+          "type": "content",
+          "content": "写过10万+阅读文章",
+          "direction": "爆款内容策略"
+        },
+        {
+          "type": "niche",
+          "content": "专注职场成长领域",
+          "direction": "垂直领域深耕"
+        },
+        {
+          "type": "network",
+          "content": "认识一些编辑和出版社",
+          "direction": "出版/约稿渠道"
+        }
+      ],
+      "fusion_goal": "把写作能力转化为多元收入",
+      "suggested_fusions": [
+        "写作能力 + 多平台 = 流量收入",
+        "爆款经验 + 课程 = 知识付费",
+        "垂直领域 + 出版 = 版税收入"
+      ]
+    },
+    {
+      "id": "sales-consultant",
+      "name": "销售顾问转型",
+      "category": "销售商务",
+      "target_user": "B2B销售、房产中介、保险顾问",
+      "pain_point": "想转型但担心收入断层",
+      "fragments": [
+        {
+          "type": "skill",
+          "content": "擅长客户需求挖掘",
+          "direction": "咨询顾问/需求分析"
+        },
+        {
+          "type": "network",
+          "content": "积累500+客户资源",
+          "direction": "资源变现/转介绍"
+        },
+        {
+          "type": "experience",
+          "content": "成交过百万级订单",
+          "direction": "大客户顾问"
+        },
+        {
+          "type": "skill",
+          "content": "会做销售培训和带新人",
+          "direction": "销售培训/企业内训"
+        }
+      ],
+      "fusion_goal": "从销售执行者转型为高价值顾问",
+      "suggested_fusions": [
+        "客户资源 + 咨询服务 = 高单价顾问",
+        "销售经验 + 培训 = 企业内训师",
+        "需求挖掘 + 产品选型 = 采购顾问"
+      ]
+    },
+    {
+      "id": "craft-maker",
+      "name": "手作达人变现",
+      "category": "手工艺",
+      "target_user": "手工爱好者、DIY达人、手作店主",
+      "pain_point": "手作精美但销量不稳定",
+      "fragments": [
+        {
+          "type": "skill",
+          "content": "会做手工皂/蜡烛/饰品",
+          "direction": "手作产品销售"
+        },
+        {
+          "type": "content",
+          "content": "会拍精美的手作过程视频",
+          "direction": "内容电商/短视频"
+        },
+        {
+          "type": "interest",
+          "content": "喜欢研究天然材料",
+          "direction": "高端定制/有机产品"
+        },
+        {
+          "type": "network",
+          "content": "在手作圈有一定知名度",
+          "direction": "社群运营/品牌合作"
+        }
+      ],
+      "fusion_goal": "把手作爱好变成稳定收入来源",
+      "suggested_fusions": [
+        "手作技能 + 短视频 = 内容电商",
+        "精美视频 + 教程 = 知识付费",
+        "材料研究 + 定制 = 高端产品线"
+      ]
+    },
+    {
+      "id": "fitness-coach",
+      "name": "健身教练线上化",
+      "category": "健康健身",
+      "target_user": "健身教练、瑜伽老师、运动达人",
+      "pain_point": "线下课时间受限，收入天花板明显",
+      "fragments": [
+        {
+          "type": "skill",
+          "content": "有专业教练认证",
+          "direction": "线上课程/远程指导"
+        },
+        {
+          "type": "content",
+          "content": "会拍健身短视频",
+          "direction": "健身自媒体"
+        },
+        {
+          "type": "experience",
+          "content": "帮助50+人成功减脂",
+          "direction": "减脂营/打卡社群"
+        },
+        {
+          "type": "interest",
+          "content": "研究营养搭配",
+          "direction": "饮食计划/营养咨询"
+        }
+      ],
+      "fusion_goal": "打破时间限制，实现健身服务规模化",
+      "suggested_fusions": [
+        "教练认证 + 线上平台 = 远程私教",
+        "短视频 + 社群 = 打卡训练营",
+        "营养研究 + 计划 = 饮食顾问服务"
+      ]
+    },
+    {
+      "id": "translator-specialist",
+      "name": "翻译专家深耕",
+      "category": "语言服务",
+      "target_user": "翻译从业者、外语专业学生、海归",
+      "pain_point": "翻译单价低，竞争激烈",
+      "fragments": [
+        {
+          "type": "skill",
+          "content": "精通中英互译",
+          "direction": "专业翻译服务"
+        },
+        {
+          "type": "niche",
+          "content": "专注法律/医学/技术领域",
+          "direction": "垂直高单价翻译"
+        },
+        {
+          "type": "resource",
+          "content": "有CATTI一级证书",
+          "direction": "认证背书/高端客户"
+        },
+        {
+          "type": "interest",
+          "content": "喜欢研究本地化策略",
+          "direction": "本地化咨询/出海服务"
+        }
+      ],
+      "fusion_goal": "从通用翻译转型为高价值语言专家",
+      "suggested_fusions": [
+        "专业领域 + 认证 = 高单价翻译",
+        "语言能力 + 本地化 = 出海顾问",
+        "翻译经验 + 培训 = 翻译教练"
+      ]
+    }
+  ]
+}

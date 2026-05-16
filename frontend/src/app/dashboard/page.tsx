@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import Link from 'next/link';
 import CompletionRing from '@/components/CompletionRing';
 
@@ -162,17 +162,17 @@ export default function DashboardHome() {
   // 随机激励语（基于日期，同一天显示同一条）
   const quoteIndex = now.getDate() % QUOTES.length;
 
-  // 打卡连续天数
-  function calcStreak(cs: CheckIn[]): number {
-    if (cs.length === 0) return 0;
-    const completed = cs
+  // 打卡连续天数（useMemo缓存，避免每次渲染重新计算）
+  const streak = useMemo(() => {
+    if (checkins.length === 0) return 0;
+    const completed = checkins
       .filter(c => c.status === 'completed' && c.completed_at)
       .map(c => new Date(c.completed_at!).toISOString().slice(0, 10))
       .filter((v, i, a) => a.indexOf(v) === i) // 去重
       .sort()
       .reverse();
     if (completed.length === 0) return 0;
-    let streak = 1;
+    let s = 1;
     const today = new Date().toISOString().slice(0, 10);
     // 如果最近完成日不是今天也不是昨天，连续天数归零
     const latest = completed[0];
@@ -184,12 +184,11 @@ export default function DashboardHome() {
       const prev = new Date(completed[i - 1]);
       const curr = new Date(completed[i]);
       const gap = Math.floor((prev.getTime() - curr.getTime()) / 86400000);
-      if (gap === 1) streak++;
+      if (gap === 1) s++;
       else break;
     }
-    return streak;
-  }
-  const streak = calcStreak(checkins);
+    return s;
+  }, [checkins]);
   const totalCheckins = checkins.filter(c => c.status === 'completed').length;
 
   // 拼图片连接率：以融合次数 × 4（平均每次融合涉及约4块拼图片）/ 总拼图片数估算
@@ -199,25 +198,28 @@ export default function DashboardHome() {
     : 0;
   const connectedCount = Math.min(fragments.length, estimatedConnections);
 
-  // 最近活动（融合 + 日记混合，取最新5条）
-  const activities: ActivityItem[] = [
-    ...fusions.slice(0, 5).map(f => ({
-      id: `f-${f.id}`,
-      type: 'fusion' as const,
-      title: f.title || f.profession || '融合结果',
-      tag: f.profession,
-      createdAt: f.created_at,
-    })),
-    ...journals.slice(0, 5).map(j => ({
-      id: `j-${j.id}`,
-      type: 'journal' as const,
-      title: j.content?.slice(0, 40) || '日记',
-      tag: j.tags?.[0],
-      createdAt: j.created_at,
-    })),
-  ]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+  // 最近活动（融合 + 日记混合，取最新5条）— useMemo缓存
+  const activities = useMemo<ActivityItem[]>(() => {
+    const items = [
+      ...fusions.slice(0, 5).map(f => ({
+        id: `f-${f.id}`,
+        type: 'fusion' as const,
+        title: f.title || f.profession || '融合结果',
+        tag: f.profession,
+        createdAt: f.created_at,
+      })),
+      ...journals.slice(0, 5).map(j => ({
+        id: `j-${j.id}`,
+        type: 'journal' as const,
+        title: j.content?.slice(0, 40) || '日记',
+        tag: j.tags?.[0],
+        createdAt: j.created_at,
+      })),
+    ];
+    return items
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+  }, [fusions, journals]);
 
   /* ---- 渲染 ---- */
   return (
@@ -265,38 +267,38 @@ export default function DashboardHome() {
         </Link>
       </div>
 
-      {/* ====== 统计卡片 3列 ====== */}
-      {loading ? (
-        <div className="grid grid-cols-3 gap-3">
-          {[1, 2, 3].map(i => (
+      {/* ====== 统计卡片 ====== */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {loading ? (
+          [1, 2, 3, 4].map(i => (
             <div key={i} className="animate-pulse rounded-2xl bg-white/60 border border-warm-dark/10 p-4">
               <div className="h-3 w-12 bg-warm-dark/10 rounded mb-2" />
               <div className="h-6 w-8 bg-warm-dark/10 rounded" />
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-4">
-            <div className="text-xs text-warm-dark/40 mb-1">🧩 碎片总数</div>
-            <div className="text-2xl font-bold text-warm-dark">{fragments.length}</div>
-          </div>
-          <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-4">
-            <div className="text-xs text-warm-dark/40 mb-1">✨ 融合次数</div>
-            <div className="text-2xl font-bold text-warm-dark">{fusions.length}</div>
-          </div>
-          <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-4">
-            <div className="text-xs text-warm-dark/40 mb-1">📔 日记篇数</div>
-            <div className="text-2xl font-bold text-warm-dark">{journals.length}</div>
-          </div>
-          <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-4">
-            <div className="text-xs text-warm-dark/40 mb-1">🔥 打卡连续</div>
-            <div className="text-2xl font-bold text-warm-dark">
-              {streak > 0 ? `${streak} 天` : `${totalCheckins} 次`}
+          ))
+        ) : (
+          <>
+            <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-4">
+              <div className="text-xs text-warm-dark/40 mb-1">🧩 碎片总数</div>
+              <div className="text-2xl font-bold text-warm-dark">{fragments.length}</div>
             </div>
-          </div>
-        </div>
-      )}
+            <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-4">
+              <div className="text-xs text-warm-dark/40 mb-1">✨ 融合次数</div>
+              <div className="text-2xl font-bold text-warm-dark">{fusions.length}</div>
+            </div>
+            <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-4">
+              <div className="text-xs text-warm-dark/40 mb-1">📔 日记篇数</div>
+              <div className="text-2xl font-bold text-warm-dark">{journals.length}</div>
+            </div>
+            <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-4">
+              <div className="text-xs text-warm-dark/40 mb-1">🔥 打卡连续</div>
+              <div className="text-2xl font-bold text-warm-dark">
+                {streak > 0 ? `${streak} 天` : `${totalCheckins} 次`}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* ====== 拼图片连接率圆环 ====== */}
       {!loading && (
@@ -425,8 +427,8 @@ export default function DashboardHome() {
   );
 }
 
-/* ---------- 组块卡片 ---------- */
-function ClusterCard({ cluster }: { cluster: Cluster; index?: number }) {
+/* ---------- 组块卡片（memo避免不必要的重渲染） ---------- */
+const ClusterCard = memo(function ClusterCard({ cluster }: { cluster: Cluster; index?: number }) {
   const [expanded, setExpanded] = useState(false);
   const { theme, name, description, count, fragments, avg_similarity } = cluster;
 
@@ -506,10 +508,10 @@ function ClusterCard({ cluster }: { cluster: Cluster; index?: number }) {
       </div>
     </div>
   );
-}
+});
 
-/* ---------- 试探探索者徽章 ---------- */
-function ExplorerBadge() {
+/* ---------- 试探探索者徽章（memo避免不必要的重渲染） ---------- */
+const ExplorerBadge = memo(function ExplorerBadge() {
   const [trialCount, setTrialCount] = useState(0);
   const [mounted, setMounted] = useState(false);
 
@@ -554,7 +556,7 @@ function ExplorerBadge() {
       </div>
     </div>
   );
-}
+});
 
 /* ---------- 工具函数 ---------- */
 function formatRelativeTime(isoStr: string): string {

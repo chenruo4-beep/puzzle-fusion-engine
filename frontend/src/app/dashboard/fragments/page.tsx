@@ -6,6 +6,7 @@ import { useToast } from '@/components/Toast';
 import { SkeletonCard, SkeletonHeader } from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import SmartBundleRecommend from '@/components/SmartBundleRecommend';
+import FragmentRelations from '@/components/FragmentRelations';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 
 const API_BASE = 'http://localhost:8000';
@@ -415,6 +416,11 @@ export default function FragmentsPage() {
                     <p className="text-sm text-warm-dark/80 leading-relaxed whitespace-pre-wrap break-words ml-1">
                       {f.content}
                     </p>
+
+                    {/* 关联发现提示 */}
+                    <div className="mt-2 ml-1">
+                      <FragmentRelations fragmentId={f.id} compact />
+                    </div>
 
                     {/* Actions (visible on hover) */}
                     <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

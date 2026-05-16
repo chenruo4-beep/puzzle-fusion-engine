@@ -15,6 +15,8 @@ from schemas.fusion import FusionCreate, FusionSaveRequest, FusionResponse
 
 class FeedbackBody(BaseModel):
     feedback: str  # 'useful' or 'not_useful'
+    reason: Optional[str] = None  # 选择"没用"时的原因
+    source: Optional[str] = 'web'  # 反馈来源
 from services.ai_service import AIService
 
 router = APIRouter()
@@ -165,13 +167,22 @@ async def get_fusion(fusion_id: int, db: Session = Depends(get_db)):
 
 @router.patch("/{fusion_id}/feedback")
 async def submit_fusion_feedback(fusion_id: int, body: FeedbackBody, db: Session = Depends(get_db)):
-    """记录融合结果的反馈（有用/没用）"""
+    """记录融合结果的反馈（有用/没用），支持收集原因用于优化LLM Prompt"""
     fusion = db.query(Fusion).filter(Fusion.id == fusion_id).first()
     if not fusion:
         raise HTTPException(status_code=404, detail="融合结果不存在")
 
     fusion.feedback = body.feedback
     fusion.feedback_at = datetime.utcnow()
+    if body.reason:
+        fusion.feedback_reason = body.reason
+    if body.source:
+        fusion.feedback_source = body.source
     db.commit()
     db.refresh(fusion)
-    return {"message": "反馈已记录", "feedback": fusion.feedback, "feedback_at": fusion.feedback_at.isoformat() if fusion.feedback_at else None}
+    return {
+        "message": "反馈已记录",
+        "feedback": fusion.feedback,
+        "feedback_at": fusion.feedback_at.isoformat() if fusion.feedback_at else None,
+        "reason": fusion.feedback_reason,
+    }

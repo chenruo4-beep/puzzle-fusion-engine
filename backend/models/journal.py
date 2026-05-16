@@ -20,5 +20,7 @@ class JournalEntry(Base):
     suggested_fragments = Column(Text, nullable=True)
     # 从本日记提取的碎片ID列表（JSON 字符串，用户确认后的）
     extracted_fragment_ids = Column(String(500), nullable=True)
+    # 自动提取的碎片数量（用于前端Toast通知）
+    auto_extracted_count = Column(IntCol, default=0, nullable=False)
     # 创建时间
     created_at = Column(DateTime(timezone=True), server_default=func.now())

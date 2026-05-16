@@ -100,6 +100,10 @@ export default function PuzzleBoard() {
   const [fusionLoading, setFusionLoading] = useState(false);
   const [fusionSaving, setFusionSaving] = useState(false);
 
+  // A级改进：粒子爆发效果
+  const [particles, setParticles] = useState<Array<{id: number; x: number; y: number; color: string; dx: number; dy: number}>>([]);
+  const particleIdRef = useRef(0);
+
   // 职业信息（从融合历史或localStorage读取）
   const [profession, setProfession] = useState('');
 
@@ -193,15 +197,20 @@ export default function PuzzleBoard() {
     });
     setPieces(initial);
     maxZRef.current = fragments.length + 5;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fragments, boardSize]);
 
   // 计算咬合的拼图片 + 触发粒子动画
   useEffect(() => {
     const engaged = new Set<string>();
+    const newPairs: Array<[PieceState, PieceState]> = [];
     for (let i = 0; i < pieces.length; i++) {
       for (let j = i + 1; j < pieces.length; j++) {
         const dist = pieceDistance(pieces[i], pieces[j]);
         if (dist < SNAP_DISTANCE) {
+          if (!engagedPieces.has(pieces[i].id) || !engagedPieces.has(pieces[j].id)) {
+            newPairs.push([pieces[i], pieces[j]]);
+          }
           engaged.add(pieces[i].id);
           engaged.add(pieces[j].id);
         }
@@ -216,8 +225,34 @@ export default function PuzzleBoard() {
       playClickSound();
       setSnapAnimPieces(justSnapped);
       setTimeout(() => setSnapAnimPieces(new Set()), 700);
+
+      // A级改进：粒子爆发
+      newPairs.forEach(([a, b]) => {
+        const midX = (a.x + b.x) / 2 + 65;
+        const midY = (a.y + b.y) / 2 + 35;
+        const fragA = getFragment(a.id);
+        const color = fragA ? (TYPE_COLORS[fragA.fragment_type] || '#d97746') : '#d97746';
+        const newParticles: Array<{id: number; x: number; y: number; color: string; dx: number; dy: number}> = [];
+        for (let i = 0; i < 10; i++) {
+          const angle = (Math.PI * 2 * i) / 10 + Math.random() * 0.3;
+          const speed = 25 + Math.random() * 35;
+          newParticles.push({
+            id: ++particleIdRef.current,
+            x: midX,
+            y: midY,
+            color,
+            dx: Math.cos(angle) * speed,
+            dy: Math.sin(angle) * speed - 15,
+          });
+        }
+        setParticles(prev => [...prev, ...newParticles]);
+        setTimeout(() => {
+          setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id)));
+        }, 800);
+      });
     }
     setEngagedPieces(engaged);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pieces]);
 
   const getFragment = (id: string) => fragments.find(f => f.id === id);
@@ -600,6 +635,21 @@ export default function PuzzleBoard() {
             </div>
           );
         })}
+
+        {/* A级改进：粒子爆发效果 */}
+        {particles.map(p => (
+          <div
+            key={p.id}
+            className="particle"
+            style={{
+              left: p.x,
+              top: p.y,
+              backgroundColor: p.color,
+              '--dx': `${p.dx}px`,
+              '--dy': `${p.dy}px`,
+            } as React.CSSProperties}
+          />
+        ))}
 
         {/* 阴影渐变边 */}
         <div className="absolute inset-0 pointer-events-none"

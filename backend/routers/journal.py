@@ -32,17 +32,36 @@ def _extract_fragments_bg(journal_id: int, content: str):
 
 
 async def _do_extract(journal_id: int, content: str):
-    """实际异步提取逻辑"""
+    """实际异步提取逻辑 — 自动入库模式"""
     db = SessionLocal()
     try:
         from services.ai_service import AIService
+        from models.fragment import Fragment
         fragments = await AIService.extract_fragments_from_journal(content)
         if fragments:
             journal = db.query(JournalEntry).filter(JournalEntry.id == journal_id).first()
             if journal:
-                journal.suggested_fragments = json.dumps(fragments, ensure_ascii=False)
+                # 自动入库：直接创建 Fragment 记录
+                created_ids = []
+                for frag_data in fragments:
+                    fragment = Fragment(
+                        user_id=journal.user_id,
+                        journal_id=journal.id,
+                        fragment_type=frag_data["type"],
+                        content=frag_data["content"],
+                        tags="日记自动提取",
+                    )
+                    db.add(fragment)
+                    db.flush()
+                    created_ids.append(fragment.id)
+
+                # 更新日记的已提取碎片ID列表
+                existing_ids = json.loads(journal.extracted_fragment_ids or "[]")
+                existing_ids.extend(created_ids)
+                journal.extracted_fragment_ids = json.dumps(existing_ids)
+                journal.auto_extracted_count = len(created_ids)
                 db.commit()
-                print(f"[BG] diary#{journal_id} 发现 {len(fragments)} 个碎片", flush=True, file=sys.stderr)
+                print(f"[BG] diary#{journal_id} 自动入库 {len(created_ids)} 个碎片", flush=True, file=sys.stderr)
         else:
             print(f"[BG] diary#{journal_id} 无碎片", flush=True, file=sys.stderr)
     except Exception as e:
@@ -170,5 +189,33 @@ async def dismiss_fragments(journal_id: int, db: Session = Depends(get_db)):
     if not journal:
         raise HTTPException(status_code=404, detail="日记不存在")
     journal.suggested_fragments = None
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{journal_id}")
+async def delete_journal(journal_id: int, db: Session = Depends(get_db)):
+    """删除日记（仅24小时内可删除）— 同时删除关联的自动提取碎片"""
+    from datetime import datetime, timedelta
+    journal = db.query(JournalEntry).filter(JournalEntry.id == journal_id).first()
+    if not journal:
+        raise HTTPException(status_code=404, detail="日记不存在")
+    now = datetime.utcnow()
+    age = now - journal.created_at
+    if age > timedelta(hours=24):
+        raise HTTPException(status_code=403, detail="超过24小时，无法删除")
+
+    # 删除关联的自动提取碎片
+    if journal.extracted_fragment_ids:
+        try:
+            ids = json.loads(journal.extracted_fragment_ids)
+            for fid in ids:
+                frag = db.query(Fragment).filter(Fragment.id == fid).first()
+                if frag:
+                    db.delete(frag)
+        except Exception:
+            pass
+
+    db.delete(journal)
     db.commit()
     return {"ok": True}

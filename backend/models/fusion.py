@@ -28,3 +28,7 @@ class Fusion(Base):
     feedback = Column(String(20), nullable=True)
     # 反馈时间
     feedback_at = Column(DateTime(timezone=True), nullable=True)
+    # 反馈原因（用户选择"没用"时收集）
+    feedback_reason = Column(Text, nullable=True)
+    # 反馈来源（web / mobile）
+    feedback_source = Column(String(20), nullable=True)

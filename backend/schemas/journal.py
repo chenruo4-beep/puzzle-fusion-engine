@@ -19,6 +19,7 @@ class JournalResponse(BaseModel):
     tags: Optional[str] = None
     suggested_fragments: Optional[str] = None
     extracted_fragment_ids: Optional[str] = None
+    auto_extracted_count: int = 0
     created_at: datetime
 
     class Config:

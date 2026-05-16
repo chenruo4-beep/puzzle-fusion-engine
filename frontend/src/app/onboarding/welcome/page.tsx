@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface FusionData {
@@ -84,14 +84,7 @@ export default function WelcomePage() {
     }
   }, [router]);
 
-  // Auto-trigger fusion once data is loaded
-  useEffect(() => {
-    if (!data || fusionTriggered.current) return;
-    fusionTriggered.current = true;
-    triggerFusion(data);
-  }, [data]);
-
-  const triggerFusion = async (fusionData: FusionData) => {
+  const triggerFusion = useCallback(async (fusionData: FusionData) => {
     setState('fusing');
     setLoadingStep(1);
 
@@ -146,7 +139,14 @@ export default function WelcomePage() {
     } finally {
       clearInterval(stepTimer);
     }
-  };
+  }, []);
+
+  // Auto-trigger fusion once data is loaded
+  useEffect(() => {
+    if (!data || fusionTriggered.current) return;
+    fusionTriggered.current = true;
+    triggerFusion(data);
+  }, [data, triggerFusion]);
 
   // Save onboarding fragments to DB so they appear in the fragments page later
   const saveFragmentsToDb = async (fusionData: FusionData) => {
@@ -235,16 +235,23 @@ export default function WelcomePage() {
   if (state === 'fusing') {
     return (
       <div className="min-h-screen bg-warm-bg flex flex-col">
-        {/* 进度条 - Step 3/3 */}
+        {/* 进度条 - 融合中 */}
         <div className="w-full h-1 bg-warm-dark/10">
           <div className="h-full bg-warm-accent w-full transition-all duration-500" />
+        </div>
+
+        {/* 步骤指示器 */}
+        <div className="flex justify-center gap-1.5 py-3">
+          <span className="w-2 h-2 rounded-full bg-warm-dark/15" />
+          <span className="w-2 h-2 rounded-full bg-warm-dark/15" />
+          <span className="w-2 h-2 rounded-full bg-warm-accent animate-pulse" />
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center px-6">
           <div className="text-center space-y-6 max-w-sm">
             <div className="text-6xl animate-bounce">🧩</div>
             <div>
-              <h2 className="text-xl font-bold text-warm-dark mb-1">步骤 3/3 · 融合你的碎片</h2>
+              <h2 className="text-xl font-bold text-warm-dark mb-1">正在融合你的碎片</h2>
               <p className="text-sm text-warm-dark/50">{data.professionIcon} {data.profession} · {data.fragments.length} 个碎片</p>
             </div>
 
@@ -315,10 +322,17 @@ export default function WelcomePage() {
         <div className="h-full bg-warm-accent w-full transition-all duration-500" />
       </div>
 
+      {/* 步骤指示器 */}
+      <div className="flex justify-center gap-1.5 py-3">
+        <span className="w-2 h-2 rounded-full bg-warm-dark/15" />
+        <span className="w-2 h-2 rounded-full bg-warm-dark/15" />
+        <span className="w-2 h-2 rounded-full bg-warm-accent" />
+      </div>
+
       {/* 顶部 */}
-      <div className="px-6 py-4 text-center">
+      <div className="px-6 pb-4 text-center">
         <div className="text-4xl mb-2">🎉</div>
-        <h1 className="text-xl font-bold text-warm-dark">你的融合结果来了！</h1>
+        <h1 className="text-xl font-bold text-warm-dark">🎉 你的融合结果来了！</h1>
         <p className="text-xs text-warm-dark/40">{data.professionIcon} {data.profession} · {data.fragments.length} 个碎片融合</p>
       </div>
 
@@ -501,9 +515,20 @@ export default function WelcomePage() {
         </div>
       </div>
 
+      {/* 新手引导提示 */}
+      <div className="px-6 py-3 bg-amber-50 border-y border-amber-100">
+        <div className="max-w-lg mx-auto flex items-center gap-3">
+          <span className="text-xl">💡</span>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-800">养成习惯：每天写日记，AI 会自动帮你提取碎片</p>
+            <p className="text-xs text-amber-600/70">碎片越多，融合结果越精准</p>
+          </div>
+        </div>
+      </div>
+
       {/* 底部CTA */}
       <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-warm-bg via-warm-bg/95 to-transparent">
-        <div className="max-w-lg mx-auto">
+        <div className="max-w-lg mx-auto space-y-2">
           <button
             onClick={() => {
               localStorage.setItem('firstFusionComplete', 'true');
@@ -515,8 +540,14 @@ export default function WelcomePage() {
             进入我的主页 →
           </button>
           <button
+            onClick={() => router.push('/dashboard/diary')}
+            className="w-full py-3 bg-white text-warm-accent font-medium text-sm rounded-2xl border-2 border-warm-accent/20 hover:bg-warm-accent/5 transition-colors"
+          >
+            📝 先写篇日记养碎片 →
+          </button>
+          <button
             onClick={() => router.push('/dashboard/fusion')}
-            className="w-full py-3 text-warm-dark/50 font-medium text-sm hover:text-warm-dark transition-colors mt-1"
+            className="w-full py-3 text-warm-dark/50 font-medium text-sm hover:text-warm-dark transition-colors"
           >
             再融合一次 →
           </button>

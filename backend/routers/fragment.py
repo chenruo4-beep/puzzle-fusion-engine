@@ -535,6 +535,99 @@ async def get_gaps(db: Session = Depends(get_db)):
     }
 
 
+@router.get("/{fragment_id}/relations")
+async def get_fragment_relations(
+    fragment_id: int,
+    limit: int = 3,
+    db: Session = Depends(get_db)
+):
+    """碎片关联发现：基于内容相似度和共现分析，返回关联碎片列表"""
+    import json
+
+    # 获取目标碎片
+    target = db.query(Fragment).filter(Fragment.id == fragment_id, Fragment.user_id == 1).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="碎片不存在")
+
+    def jaccard(s1: str, s2: str) -> float:
+        def ngrams(s, n=2):
+            s = s.strip().lower()
+            return set(s[i:i+n] for i in range(len(s)-n+1)) if len(s) >= n else set(s)
+        a = ngrams(s1); b = ngrams(s2)
+        if not a or not b: return 0.0
+        return len(a & b) / len(a | b)
+
+    def get_quality_score(f: Fragment) -> int:
+        try:
+            obj = json.loads(f.tags or "{}")
+            return int(obj.get("quality_score", 0) or 0)
+        except:
+            return 0
+
+    # 获取所有其他活跃碎片
+    all_frags = db.query(Fragment).filter(
+        Fragment.user_id == 1,
+        Fragment.archived == 0,
+        Fragment.id != fragment_id
+    ).all()
+
+    # 计算关联分数
+    scored: list[dict] = []
+    for f in all_frags:
+        sim = jaccard(target.content, f.content)
+
+        # 同类型加成
+        type_bonus = 1.5 if f.fragment_type == target.fragment_type else 1.0
+
+        # 质量分数加成
+        qs = get_quality_score(f)
+        quality_boost = 1.0 + (qs / 10.0)  # 最高1.5x
+
+        # 综合关联度
+        relation_score = sim * type_bonus * quality_boost
+
+        if relation_score > 0.03:  # 阈值过滤
+            scored.append({
+                "id": f.id,
+                "content": f.content,
+                "fragment_type": f.fragment_type,
+                "quality_score": qs,
+                "similarity": round(sim, 3),
+                "relation_score": round(relation_score, 4),
+            })
+
+    # 按关联度排序
+    scored.sort(key=lambda x: x["relation_score"], reverse=True)
+
+    # 生成关联描述
+    relations = scored[:limit]
+    relation_count = len(relations)
+
+    # 关联类型标签
+    relation_labels = []
+    if relation_count > 0:
+        top_relation = relations[0]
+        if top_relation["similarity"] > 0.3:
+            relation_labels.append("高度相似")
+        elif top_relation["similarity"] > 0.15:
+            relation_labels.append("内容相关")
+        else:
+            relation_labels.append("同类型")
+
+        if any(r["fragment_type"] == target.fragment_type for r in relations):
+            relation_labels.append("同类型")
+
+    return {
+        "fragment_id": fragment_id,
+        "fragment_content": target.content,
+        "fragment_type": target.fragment_type,
+        "relation_count": relation_count,
+        "relation_labels": relation_labels,
+        "relations": relations,
+        "message": f"这个碎片和另外 {relation_count} 个碎片有关联" if relation_count > 0 else "暂无发现明显关联碎片",
+    }
+
+
 @router.delete("/{fragment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_fragment(fragment_id: int, db: Session = Depends(get_db)):
     """删除指定碎片"""

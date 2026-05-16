@@ -13,7 +13,7 @@ export default function VisionPage() {
       </div>
 
       {/* 主体内容 */}
-      <div className="max-w-sm w-full text-center space-y-8 -mt-16">
+      <div className="max-w-sm w-full text-center space-y-6 -mt-8">
         {/* Logo / Icon */}
         <div className="space-y-3">
           <div className="text-7xl">🧩</div>
@@ -53,11 +53,20 @@ export default function VisionPage() {
             </div>
           </div>
 
-          <p className="text-base text-warm-dark/70 leading-relaxed">
-            AI 帮你把碎片拼在一起，<br/>
-            <strong className="text-warm-accent">发现你从没想过的可能性</strong>
-          </p>
+          <div className="p-4 rounded-xl bg-warm-accent/5 border border-warm-accent/10">
+            <p className="text-sm text-warm-dark/70 leading-relaxed">
+              <strong className="text-warm-accent">只需3步：</strong><br/>
+              ① 选职业 → ② 确认碎片 → ③ 看融合结果
+            </p>
+          </div>
         </div>
+      </div>
+
+      {/* 步骤指示器 */}
+      <div className="fixed top-16 left-0 right-0 flex justify-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-warm-accent" />
+        <span className="w-2 h-2 rounded-full bg-warm-dark/15" />
+        <span className="w-2 h-2 rounded-full bg-warm-dark/15" />
       </div>
 
       {/* CTA */}

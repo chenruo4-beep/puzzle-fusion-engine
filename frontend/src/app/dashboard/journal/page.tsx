@@ -14,6 +14,7 @@ interface JournalEntry {
   tags: string | null;
   suggested_fragments: string | null;
   extracted_fragment_ids: string | null;
+  auto_extracted_count: number;
   created_at: string;
 }
 
@@ -103,6 +104,10 @@ export default function JournalPage() {
   const [editTags, setEditTags] = useState('');
   const [editSaving, setEditSaving] = useState(false);
 
+  // 删除
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleteSaving, setDeleteSaving] = useState(false);
+
   // 碎片建议
   const [showSuggestionsId, setShowSuggestionsId] = useState<number | null>(null);
   const [, setConfirmingIds] = useState<Set<number>>(new Set());
@@ -167,18 +172,22 @@ export default function JournalPage() {
     return `${d.getMonth() + 1}月${d.getDate()}日 ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   }
 
-  // ── 轮询AI碎片提取结果 ──
+  // ── 轮询AI碎片自动提取结果 ──
   const pollTimers = useRef<Map<number, ReturnType<typeof setInterval>>>(new Map());
+  const notifiedIds = useRef<Set<number>>(new Set());
 
   function startPolling(entryId: number) {
     let attempts = 0;
-    const maxAttempts = 15; // 15 × 2s = 30s max
+    const maxAttempts = 20; // 20 × 2s = 40s max
     const timer = setInterval(async () => {
       attempts++;
       try {
         const res = await fetch(`${API_BASE}/api/journal/${entryId}`);
         const entry = await res.json();
-        if (entry.suggested_fragments) {
+        // 自动入库完成：检测到 extracted_fragment_ids 或 auto_extracted_count
+        const hasExtracted = entry.extracted_fragment_ids && JSON.parse(entry.extracted_fragment_ids).length > 0;
+        const autoCount = entry.auto_extracted_count || 0;
+        if (hasExtracted || autoCount > 0) {
           clearInterval(timer);
           pollTimers.current.delete(entryId);
           setAnalyzingIds(prev => {
@@ -187,6 +196,14 @@ export default function JournalPage() {
             return next;
           });
           await loadEntries();
+          // Toast 通知（只通知一次）
+          if (!notifiedIds.current.has(entryId)) {
+            notifiedIds.current.add(entryId);
+            const count = autoCount || (entry.extracted_fragment_ids ? JSON.parse(entry.extracted_fragment_ids).length : 0);
+            if (count > 0) {
+              toast(`🧩 AI 自动提取了 ${count} 个碎片`, 'success');
+            }
+          }
           return;
         }
       } catch { /* retry */ }
@@ -206,9 +223,11 @@ export default function JournalPage() {
 
   // 清理所有轮询定时器
   useEffect(() => {
+    const timersRef = pollTimers.current;
     return () => {
-      pollTimers.current.forEach(timer => clearInterval(timer));
+      timersRef.forEach(timer => clearInterval(timer));
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 扫描遮罩进度文案轮转
@@ -303,6 +322,33 @@ export default function JournalPage() {
       else if (res.status === 403) { toast('超过24小时，无法修改', 'warning'); cancelEdit(); }
       else { toast('编辑失败', 'error'); }
     } catch { toast('编辑失败', 'error'); } finally { setEditSaving(false); }
+  }
+
+  // ── 删除 ──
+  function startDelete(entryId: number) {
+    setDeleteConfirmId(entryId);
+  }
+  function cancelDelete() {
+    setDeleteConfirmId(null);
+  }
+
+  async function handleDelete(entryId: number) {
+    setDeleteSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/journal/${entryId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        toast('删除成功', 'success');
+        setDeleteConfirmId(null);
+        await loadEntries();
+      } else if (res.status === 403) {
+        toast('超过24小时，无法删除', 'warning');
+        setDeleteConfirmId(null);
+      } else {
+        toast('删除失败', 'error');
+      }
+    } catch { toast('删除失败', 'error'); } finally { setDeleteSaving(false); }
   }
 
   function openForm(mode: WriteMode) {
@@ -615,8 +661,8 @@ export default function JournalPage() {
                   {entry.tags && entry.tags.split(',').map((tag) => (
                     <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-warm-accent/10 text-warm-accent">{tag.trim()}</span>
                   ))}
-                  {/* 碎片建议指示器 */}
-                  {parseSuggestedFragments(entry).length > 0 && (
+                  {/* 碎片建议指示器 — 仅显示手动建议（自动提取的不再显示） */}
+                  {parseSuggestedFragments(entry).length > 0 && entry.auto_extracted_count === 0 && (
                     <button
                       onClick={() => {
                         if (showSuggestionsId === entry.id) {
@@ -783,9 +829,13 @@ export default function JournalPage() {
                       {isWithin24h(entry.created_at) && (
                         <button onClick={() => startEdit(entry)} className="text-xs text-warm-accent hover:underline">✏️ 编辑</button>
                       )}
+                      {isWithin24h(entry.created_at) && (
+                        <button onClick={() => startDelete(entry.id)} className="text-xs text-rose-400 hover:text-rose-600 hover:underline">🗑️ 删除</button>
+                      )}
                       {entry.extracted_fragment_ids ? (
                         <Link href="/dashboard/fragments" className="text-xs text-warm-dark/50 hover:text-warm-accent transition-colors">
                           🧩 已提取 {JSON.parse(entry.extracted_fragment_ids).length || 0} 个碎片
+                          {entry.auto_extracted_count > 0 && <span className="ml-1 text-emerald-500">(AI自动)</span>}
                         </Link>
                       ) : analyzingIds.has(entry.id) ? (
                         <span className="text-xs text-amber-500 animate-pulse">🧠 AI 正在扫描...</span>
@@ -840,6 +890,39 @@ export default function JournalPage() {
                   }`}
                 />
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 删除确认对话框 */}
+      {deleteConfirmId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4">
+            <div className="text-center">
+              <div className="text-3xl mb-2">🗑️</div>
+              <h3 className="text-lg font-bold text-warm-dark">确认删除？</h3>
+              <p className="text-sm text-warm-dark/60 mt-2">
+                删除后无法恢复，关联的自动提取碎片也会被删除。
+              </p>
+              <p className="text-xs text-amber-600 mt-1">
+                ⚠️ 超过24小时的日记无法删除
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={cancelDelete}
+                className="flex-1 py-2.5 bg-warm-dark/5 text-warm-dark/60 rounded-xl text-sm font-medium hover:bg-warm-dark/10 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirmId)}
+                disabled={deleteSaving}
+                className="flex-1 py-2.5 bg-rose-500 text-white rounded-xl text-sm font-medium hover:bg-rose-600 disabled:opacity-50 transition-colors"
+              >
+                {deleteSaving ? '删除中...' : '确认删除'}
+              </button>
             </div>
           </div>
         </div>

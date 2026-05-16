@@ -41,17 +41,6 @@ export function useABTest(section: 'hero' | 'pain' | 'social' | 'pricing' = 'her
   const [config, setConfig] = useState<ABConfig | null>(null);
   const [version, setVersion] = useState<string>('A');
 
-  // 1. Load config
-  useEffect(() => {
-    fetch('/ab-config.json')
-      .then(res => res.json())
-      .then((data: ABConfig) => {
-        setConfig(data);
-        assignVersion(data, section);
-      })
-      .catch(err => console.error('Failed to load AB config:', err));
-  }, [section]);
-
   // 2. Assign version (per-section sessionStorage key)
   const assignVersion = useCallback((cfg: ABConfig, sec: string) => {
     const sectionConfig = getSectionConfig(cfg, sec);
@@ -85,6 +74,18 @@ export function useABTest(section: 'hero' | 'pain' | 'social' | 'pricing' = 'her
     setVersion(assigned);
     trackEvent('page_view', { section: sec, version: assigned });
   }, []);
+
+  // 1. Load config
+  useEffect(() => {
+    fetch('/ab-config.json')
+      .then(res => res.json())
+      .then((data: ABConfig) => {
+        setConfig(data);
+        assignVersion(data, section);
+      })
+      .catch(err => console.error('Failed to load AB config:', err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section]);
 
   // 3. Get section config
   const getSectionConfig = (cfg: ABConfig | null, sec: string): ABTestSection | undefined => {

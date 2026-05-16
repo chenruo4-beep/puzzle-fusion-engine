@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import HeroSection from "@/components/HeroSection";
 import SmartLogInput from "@/components/SmartLogInput";
-import PainSection from "@/components/PainSection";
-import SocialProofSection from "@/components/SocialProofSection";
-import PricingSection from "@/components/PricingSection";
+
+// 懒加载非首屏组件，减少初始bundle
+const PainSection = dynamic(() => import("@/components/PainSection"));
+const SocialProofSection = dynamic(() => import("@/components/SocialProofSection"));
+const PricingSection = dynamic(() => import("@/components/PricingSection"));
 
 export default function Home() {
   const [showMoreCases, setShowMoreCases] = useState(false);
