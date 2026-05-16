@@ -1,12 +1,7 @@
 {
   "version": 2,
-  "name": "puzzle-fusion-engine",
   "framework": "nextjs",
-  "buildCommand": "cd frontend && npm run build",
+  "buildCommand": "cd frontend && next build",
   "outputDirectory": "frontend/.next",
-  "installCommand": "cd frontend && npm install",
-  "devCommand": "cd frontend && npm run dev",
-  "env": {
-    "NEXT_PUBLIC_API_URL": "https://puzzle-fusion-api.onrender.com"
-  }
+  "installCommand": "cd frontend && npm install"
 }
