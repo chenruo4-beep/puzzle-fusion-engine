@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import html2canvas from 'html2canvas';
+// html2canvas 已由 ShareCard 组件处理
 import { Skeleton, SkeletonCard, SkeletonHeader } from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
@@ -10,6 +10,7 @@ import { playClickSound, playPiecePlaceSound, playFusionSound } from '@/hooks/us
 import PuzzleFusionAnimation from '@/components/PuzzleFusionAnimation';
 import { useDragPuzzle } from '@/hooks/useDragPuzzle';
 import { useMobilePuzzle } from '@/hooks/useMobilePuzzle';
+import ShareCard from '@/components/ShareCard';
 
 interface FragmentItem {
   type: string;
@@ -28,6 +29,8 @@ interface RoadmapStep {
   step: number;
   time: string;
   action: string;
+  landmark?: string;
+  landmark_icon?: string;
 }
 
 interface FusionDirection {
@@ -86,7 +89,7 @@ export default function FusionPage() {
   const [expandedDir, setExpandedDir] = useState<number>(0);
   const [saved, setSaved] = useState(false);
   const [fusionSuccess, setFusionSuccess] = useState(false);
-  const [exportingImage, setExportingImage] = useState(false);
+  // exportingImage 状态已由 ShareCard 组件处理
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [feedbackState, setFeedbackState] = useState<'idle' | 'useful' | 'not_useful'>('idle');
@@ -146,6 +149,51 @@ export default function FusionPage() {
       } else toast('反馈提交失败', 'error');
     } catch {
       toast('反馈提交失败', 'error');
+    }
+  }
+
+  // 创建行进地图
+  async function createJourneyMap(direction: FusionDirection, dirIndex: number, textOnly: boolean = false) {
+    try {
+      const steps = (direction.roadmap || []).map((step, i) => ({
+        step_number: step.step,
+        title: step.action,
+        description: `${step.time}: ${step.action}`,
+        landmark: step.landmark || ['起点广场', '技能工坊', '市场集市', '口碑塔', '收益城堡'][i] || `步骤${i+1}`,
+        landmark_icon: step.landmark_icon || ['🏛️', '🔧', '🏪', '🗼', '🏰'][i] || '📍',
+        time_estimate: step.time,
+        action: step.action,
+        position_x: [0, 1, 2, 2, 1][i] || 0,
+        position_y: [2, 2, 2, 1, 1][i] || 0,
+      }));
+
+      const res = await fetch(`${API_BASE}/api/journey-maps/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fusion_id: result?.id,
+          title: direction.title,
+          subtitle: direction.why_this_works?.slice(0, 100) + '...',
+          difficulty: direction.difficulty,
+          time_to_result: direction.time_to_first_result,
+          steps,
+        }),
+      });
+
+      if (!res.ok) throw new Error('创建失败');
+      const mapData = await res.json();
+
+      if (textOnly) {
+        // 文字版：跳转到地图页面
+        window.open(`/dashboard/journey-map/${mapData.id}?text=1`, '_blank');
+      } else {
+        // 地图版：跳转到地图页面
+        window.open(`/dashboard/journey-map/${mapData.id}`, '_blank');
+      }
+
+      toast('行进地图已生成！', 'success');
+    } catch {
+      toast('创建地图失败', 'error');
     }
   }
 
@@ -673,27 +721,7 @@ export default function FusionPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleExportImage = async () => {
-    const el = document.getElementById('fusion-result-card');
-    if (!el) return;
-    setExportingImage(true);
-    try {
-      const canvas = await html2canvas(el, {
-        backgroundColor: '#FDF8F3',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-      const link = document.createElement('a');
-      link.download = `拼图融合报告_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    } catch {
-      // Silent fail
-    } finally {
-      setExportingImage(false);
-    }
-  };
+  // handleExportImage 已由 ShareCard 组件替代
 
   function handleReset() {
     setResult(null);
@@ -867,6 +895,23 @@ export default function FusionPage() {
                       <span className="text-xs text-warm-accent font-bold">📌 今天就能开始：</span>
                       <p className="text-sm font-medium text-warm-dark mt-1">{dir.next_action}</p>
                     </div>
+
+                    {/* 创建行进地图按钮 */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => createJourneyMap(dir, i)}
+                        className="flex-1 py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        🗺️ 生成行进地图
+                      </button>
+                      <button
+                        onClick={() => createJourneyMap(dir, i, true)}
+                        className="py-2.5 px-4 bg-warm-border hover:bg-warm-border/80 text-warm-dark rounded-xl text-sm font-medium transition-colors"
+                        title="极简文字版"
+                      >
+                        📝 文字版
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -914,6 +959,18 @@ export default function FusionPage() {
           </div>
         )}
 
+        {/* 分享卡片 */}
+        <div className="border-t border-warm-dark/10 pt-6">
+          <h3 className="text-sm font-medium text-warm-dark/50 mb-4 text-center">📸 生成分享卡片</h3>
+          <ShareCard
+            goldenSentence={result.golden_sentence}
+            profession={profession}
+            confidence={result.confidence}
+            directions={result.directions}
+            insight={result.insight}
+          />
+        </div>
+
         {/* 操作栏 */}
         <div className="flex items-center justify-center gap-3 pt-2 pb-4">
           <button
@@ -931,13 +988,6 @@ export default function FusionPage() {
             }`}
           >
             {copied ? '✅ 已复制' : '📋 复制报告'}
-          </button>
-          <button
-            onClick={handleExportImage}
-            disabled={exportingImage}
-            className="px-5 py-2 bg-warm-dark/10 text-warm-dark rounded-xl text-sm font-medium hover:bg-warm-dark/20 transition-colors disabled:opacity-50"
-          >
-            {exportingImage ? '⏳ 导出中...' : '🖼️ 导出图片'}
           </button>
           <button
             onClick={handleReset}

@@ -26,3 +26,7 @@ class CheckIn(Base):
     completed_at = Column(DateTime(timezone=True), nullable=True)
     # 创建时间
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # 连续打卡天数
+    streak_days = Column(Integer, default=0)
+    # 是否是新记录（用于动画展示）
+    is_new_record = Column(Integer, default=0)

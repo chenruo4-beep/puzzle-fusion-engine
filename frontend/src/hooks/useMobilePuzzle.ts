@@ -15,9 +15,9 @@ interface MobileSnapState {
   startY: number;
 }
 
-const LONG_PRESS_MS = 500;
+const LONG_PRESS_MS = 300;
 // Vibration on long press (if supported)
-const VIBRATE_MS = 15;
+const VIBRATE_MS = 20;
 
 export function useMobilePuzzle(onSnap?: (fragmentId: string) => void) {
   const [snap, setSnap] = useState<MobileSnapState>({
@@ -33,7 +33,11 @@ export function useMobilePuzzle(onSnap?: (fragmentId: string) => void) {
 
   const clear = useCallback(() => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
-    if (elRef.current) { elRef.current.classList.remove('mobile-card-selected'); elRef.current = null; }
+    if (elRef.current) {
+      elRef.current.classList.remove('mobile-card-selected');
+      elRef.current.classList.remove('mobile-pressing');
+      elRef.current = null;
+    }
     movingRef.current = false;
   }, []);
 
@@ -67,15 +71,21 @@ export function useMobilePuzzle(onSnap?: (fragmentId: string) => void) {
     elRef.current = el;
     el.setPointerCapture(e.pointerId);
 
+    // 立即添加按压态
+    el.classList.add('mobile-pressing');
+
     timerRef.current = setTimeout(() => {
       const curEl = elRef.current;
       if (!curEl || movingRef.current) return;
+
+      // 移除按压态，添加选中态
+      curEl.classList.remove('mobile-pressing');
+      curEl.classList.add('mobile-card-selected');
 
       // Haptic feedback
       if (navigator.vibrate) navigator.vibrate(VIBRATE_MS);
 
       // Enter selected mode
-      curEl.classList.add('mobile-card-selected');
       setSnap({
         fragment,
         phase: 'selected',
@@ -97,6 +107,11 @@ export function useMobilePuzzle(onSnap?: (fragmentId: string) => void) {
 
   const onPointerUp = useCallback(() => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+
+    // 移除按压态
+    if (elRef.current) {
+      elRef.current.classList.remove('mobile-pressing');
+    }
 
     if (snap.phase === 'pressing') {
       // Short tap — normal click handled by parent
@@ -123,7 +138,10 @@ export function useMobilePuzzle(onSnap?: (fragmentId: string) => void) {
   // Cancel selection (tap outside)
   const cancelSelection = useCallback(() => {
     if (snap.phase !== 'selected') return;
-    if (elRef.current) elRef.current.classList.remove('mobile-card-selected');
+    if (elRef.current) {
+      elRef.current.classList.remove('mobile-card-selected');
+      elRef.current.classList.remove('mobile-pressing');
+    }
     elRef.current = null;
     setSnap({ fragment: null, phase: 'idle', startX: 0, startY: 0 });
   }, [snap.phase]);

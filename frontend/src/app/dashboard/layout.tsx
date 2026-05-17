@@ -24,6 +24,13 @@ const navSections = [
       { href: "/dashboard/history", label: "历史", icon: "📋" },
     ],
   },
+  {
+    label: '成长',
+    items: [
+      { href: "/dashboard/journey-map", label: "地图", icon: "🗺️" },
+      { href: "/dashboard/co-creation", label: "合拍", icon: "🤝" },
+    ],
+  },
 ];
 
 const homeItem = { href: "/dashboard", label: "首页", icon: "🏠" };

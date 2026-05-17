@@ -223,32 +223,39 @@ export default function PuzzleBoard() {
     });
     if (justSnapped.size > 0) {
       playClickSound();
+      
+      // 屏幕震动反馈
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([30, 20, 30]);
+      }
+      
       setSnapAnimPieces(justSnapped);
-      setTimeout(() => setSnapAnimPieces(new Set()), 700);
+      setTimeout(() => setSnapAnimPieces(new Set()), 900);
 
-      // A级改进：粒子爆发
+      // A级改进：粒子爆发（增强版）
       newPairs.forEach(([a, b]) => {
         const midX = (a.x + b.x) / 2 + 65;
         const midY = (a.y + b.y) / 2 + 35;
         const fragA = getFragment(a.id);
         const color = fragA ? (TYPE_COLORS[fragA.fragment_type] || '#d97746') : '#d97746';
-        const newParticles: Array<{id: number; x: number; y: number; color: string; dx: number; dy: number}> = [];
-        for (let i = 0; i < 10; i++) {
-          const angle = (Math.PI * 2 * i) / 10 + Math.random() * 0.3;
-          const speed = 25 + Math.random() * 35;
+        const newParticles: Array<{id: number; x: number; y: number; color: string; dx: number; dy: number; size: number}> = [];
+        for (let i = 0; i < 20; i++) {
+          const angle = (Math.PI * 2 * i) / 20 + Math.random() * 0.4;
+          const speed = 40 + Math.random() * 50;
           newParticles.push({
             id: ++particleIdRef.current,
             x: midX,
             y: midY,
             color,
             dx: Math.cos(angle) * speed,
-            dy: Math.sin(angle) * speed - 15,
+            dy: Math.sin(angle) * speed - 25,
+            size: 4 + Math.random() * 10,
           });
         }
         setParticles(prev => [...prev, ...newParticles]);
         setTimeout(() => {
           setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id)));
-        }, 800);
+        }, 1200);
       });
     }
     setEngagedPieces(engaged);
@@ -472,7 +479,11 @@ export default function PuzzleBoard() {
           </span>
         ))}
         <span className="text-xs text-warm-dark/30 ml-auto mr-2">
-          {mobilePuzzle.isMobile ? '💡 长按选中碎片，点击其他碎片咬合' : '💡 拖拽拼图片到一起，咬合后可融合'}
+          {mobilePuzzle.isMobile
+            ? mobilePuzzle.snap.phase === 'selected'
+              ? '👆 点击其他碎片进行咬合'
+              : '💡 长按选中碎片，点击其他碎片咬合'
+            : '💡 拖拽拼图片到一起，咬合后可融合'}
         </span>
       </div>
 
@@ -556,8 +567,9 @@ export default function PuzzleBoard() {
                 cursor: mobilePuzzle.isMobile ? 'pointer' : 'grab',
                 touchAction: 'none',
                 transition: dragRef.current.pieceId === piece.id ? 'none' : 'box-shadow 0.2s, transform 0.2s',
-                boxShadow: isEngaged ? '0 0 20px rgba(217, 119, 70, 0.6), 0 0 40px rgba(217, 119, 70, 0.3)' : undefined,
-                animation: snapAnimPieces.has(piece.id) ? 'snap-glow 0.6s ease-out forwards' : attractTargetId === piece.id ? 'drop-zone-breathe 1s ease-in-out infinite' : undefined,
+                boxShadow: isEngaged ? '0 0 30px rgba(217, 119, 70, 0.8), 0 0 60px rgba(232, 168, 96, 0.4), 0 0 90px rgba(217, 119, 70, 0.2)' : undefined,
+                animation: snapAnimPieces.has(piece.id) ? 'snap-glow 0.8s ease-out forwards, snap-bounce 0.5s ease-out forwards' : attractTargetId === piece.id ? 'drop-zone-breathe 1s ease-in-out infinite' : undefined,
+                transform: snapAnimPieces.has(piece.id) ? 'scale(1.08)' : undefined,
               }}
               onPointerDown={(e) => {
                 if (mobilePuzzle.isMobile) {
@@ -644,6 +656,8 @@ export default function PuzzleBoard() {
             style={{
               left: p.x,
               top: p.y,
+              width: (p as unknown as {size?: number}).size || 10,
+              height: (p as unknown as {size?: number}).size || 10,
               backgroundColor: p.color,
               '--dx': `${p.dx}px`,
               '--dy': `${p.dy}px`,

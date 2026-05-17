@@ -5,6 +5,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import HeroSection from "@/components/HeroSection";
 import SmartLogInput from "@/components/SmartLogInput";
+import FusionDemo from "@/components/FusionDemo";
 
 // 懒加载非首屏组件，减少初始bundle
 const PainSection = dynamic(() => import("@/components/PainSection"));
@@ -21,30 +22,78 @@ export default function Home() {
       {/* Section 1.5: 统一输入流 */}
       <SmartLogInput />
 
+      {/* Section 1.8: 体验融合Demo（无需登录） */}
+      <FusionDemo />
+
       {/* Section 2: 痛点共鸣区（A/B测试） */}
       <PainSection />
 
-      {/* Section 3: 产品哲学 */}
+      {/* Section 3: 产品哲学 —— 我的旅途 / 我们的旅途 */}
       <section className="py-20 px-6 bg-white/50">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-warm-dark mb-8">
-            为什么是「拼图」？
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <div className="bg-warm-light/60 rounded-2xl p-6 border border-warm-accent/10">
-              <div className="text-3xl mb-3">🧩</div>
-              <h3 className="font-semibold text-warm-dark mb-2">你不是没能力</h3>
-              <p className="text-sm text-warm-dark/70">你只是还没看到，你已有的拼图片能拼出什么。</p>
+        <div className="max-w-4xl mx-auto">
+          {/* 标题 */}
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-warm-dark mb-4">
+              两种旅途，同一种拼图语言
+            </h2>
+            <p className="text-warm-dark/60 max-w-xl mx-auto">
+              无论你是独自前行，还是和某个人一起，拼图融合都能帮你看见——
+              你已经拥有的，和可能一起创造的。
+            </p>
+          </div>
+
+          {/* 两层卡片 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 我的旅途 */}
+            <div className="bg-gradient-to-br from-warm-light/80 to-warm-bg/80 rounded-2xl p-6 border border-warm-accent/10 hover:border-warm-accent/30 transition-colors">
+              <div className="text-3xl mb-3">🚶</div>
+              <h3 className="font-semibold text-warm-dark mb-2 text-lg">我的旅途</h3>
+              <p className="text-sm text-warm-dark/70 mb-4">
+                一个人的碎片，拼成一个人的方向。
+                你不是没能力，只是还没看到已有的拼图片能拼出什么。
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
+                  <span className="text-warm-accent">🧩</span> 个人碎片永久保存
+                </div>
+                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
+                  <span className="text-warm-accent">🔄</span> 组合发现新可能
+                </div>
+                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
+                  <span className="text-warm-accent">🌱</span> 越拼越多，持续成长
+                </div>
+              </div>
+              <Link href="/onboarding/profession">
+                <button className="mt-4 w-full py-2.5 bg-warm-accent text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+                  开始我的旅途
+                </button>
+              </Link>
             </div>
-            <div className="bg-warm-light/60 rounded-2xl p-6 border border-warm-accent/10">
-              <div className="text-3xl mb-3">🔄</div>
-              <h3 className="font-semibold text-warm-dark mb-2">组合 &gt; 单点</h3>
-              <p className="text-sm text-warm-dark/70">老师+读书笔记=付费课程。骑手+短视频=探店博主。</p>
-            </div>
-            <div className="bg-warm-light/60 rounded-2xl p-6 border border-warm-accent/10">
-              <div className="text-3xl mb-3">🌱</div>
-              <h3 className="font-semibold text-warm-dark mb-2">越拼越多</h3>
-              <p className="text-sm text-warm-dark/70">每融合一次，你就多几块新拼图片。拼图越来越大。</p>
+
+            {/* 我们的旅途 */}
+            <div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 rounded-2xl p-6 border border-indigo-200/30 hover:border-indigo-300/50 transition-colors">
+              <div className="text-3xl mb-3">🤝</div>
+              <h3 className="font-semibold text-warm-dark mb-2 text-lg">我们的旅途</h3>
+              <p className="text-sm text-warm-dark/70 mb-4">
+                两个人的碎片，能不能拼成更大的未来？
+                合拍分析帮你看见——你们是否适合一起出发。
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
+                  <span className="text-indigo-500">🧩</span> 双人碎片组合分析
+                </div>
+                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
+                  <span className="text-indigo-500">📊</span> 契合潜力值评估
+                </div>
+                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
+                  <span className="text-indigo-500">🗺️</span> 共同行进地图
+                </div>
+              </div>
+              <Link href="/dashboard/co-creation">
+                <button className="mt-4 w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+                  开始我们的旅途
+                </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -322,6 +371,89 @@ export default function Home() {
               <h3 className="text-lg font-semibold text-warm-dark mb-2">成长循环</h3>
               <p className="text-warm-dark/70">打卡→反馈→新拼图片→再融合，越用越准</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 6.5: 行进地图预览 */}
+      <section className="py-20 px-6 bg-warm-accent/5">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-warm-dark mb-4">
+              你的成长，看得见
+            </h2>
+            <p className="text-lg text-warm-dark/70 max-w-2xl mx-auto">
+              每个融合方向都会生成一张行进地图，
+              像玩游戏一样推进你的副业计划
+            </p>
+          </div>
+
+          {/* 地图预览 */}
+          <div className="bg-white rounded-2xl border-2 border-warm-border p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="font-bold text-warm-dark">示例：老师王姐的行进地图</h3>
+                <p className="text-sm text-warm-dark/50">作文提分训练营 → 知识付费</p>
+              </div>
+              <span className="text-xs px-3 py-1 rounded-full bg-amber-50 text-amber-600">
+                进度: 40%
+              </span>
+            </div>
+
+            {/* 简化版地图网格 */}
+            <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto">
+              {[
+                { icon: '🏛️', label: '起点广场', status: 'completed' },
+                { icon: '🔧', label: '技能工坊', status: 'completed' },
+                { icon: '🏪', label: '市场集市', status: 'active' },
+                { icon: '🗼', label: '口碑塔', status: 'locked' },
+                { icon: '🏰', label: '收益城堡', status: 'locked' },
+                { icon: '⭐', label: '里程碑', status: 'locked' },
+              ].map((step, i) => (
+                <div
+                  key={i}
+                  className={`aspect-square rounded-xl flex flex-col items-center justify-center border-2 transition-all ${
+                    step.status === 'completed'
+                      ? 'bg-green-50 border-green-300'
+                      : step.status === 'active'
+                      ? 'bg-amber-50 border-amber-400 shadow-lg'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  <span className="text-2xl">{step.icon}</span>
+                  <span className="text-[10px] text-center mt-1 text-warm-dark/60">{step.label}</span>
+                  {step.status === 'active' && (
+                    <span className="text-xs animate-bounce">🚶</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* 进度条 */}
+            <div className="mt-6 h-2 bg-warm-border rounded-full overflow-hidden">
+              <div className="h-full bg-amber-500 rounded-full" style={{ width: '40%' }} />
+            </div>
+
+            <div className="mt-4 text-center">
+              <p className="text-sm text-warm-dark/60">
+                点击任意节点查看具体行动步骤，拖拽调整进度
+              </p>
+            </div>
+          </div>
+
+          {/* 地图特性 */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
+            {[
+              { icon: '🗺️', title: '可视化路线', desc: '5步路线图，每步都有具体行动' },
+              { icon: '📍', title: '地标建筑', desc: '每个步骤都是一座建筑，有独特图标' },
+              { icon: '🚶', title: '3D小人', desc: '实时显示你走到哪一步' },
+            ].map((feat, i) => (
+              <div key={i} className="bg-white/80 rounded-xl p-4 text-center">
+                <span className="text-2xl">{feat.icon}</span>
+                <h4 className="font-semibold text-warm-dark mt-2">{feat.title}</h4>
+                <p className="text-xs text-warm-dark/60 mt-1">{feat.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

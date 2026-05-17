@@ -10,6 +10,8 @@ from models.checkin import CheckIn
 from models.template import Template
 from models.analytics import ABEvent
 from models.inspiration import Inspiration
+from models.co_creation import CoCreation, CoCreationFragment
+from models.co_creation_order import CoCreationOrder
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
