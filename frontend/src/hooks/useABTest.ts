@@ -143,7 +143,7 @@ function getDefaultContent(section: string): ABVersionContent {
     case 'pricing':
       return {
         title: "开始融合",
-        subtitle: "不需要信用卡，选择你的职业，2分钟完成入门",
+        subtitle: "选择你的职业，2分钟完成入门",
         cta: "免费试用 →"
       };
     default:

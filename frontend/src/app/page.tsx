@@ -339,7 +339,7 @@ export default function Home() {
             开始融合
           </Link>
           <p className="text-warm-light/60 text-sm mb-8">
-            不需要信用卡，选择你的职业，2分钟完成入门
+            选择你的职业，2分钟完成入门
           </p>
           <p className="text-warm-light/40 text-sm">
             © 2026 拼图融合引擎 | 你的拼图片，值得被拼起来

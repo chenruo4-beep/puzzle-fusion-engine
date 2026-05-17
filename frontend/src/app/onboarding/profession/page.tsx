@@ -60,14 +60,14 @@ export default function ProfessionPage() {
       </div>
 
       {/* 职业卡片网格 */}
-      <div className="flex-1 px-6 pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+      <div className="flex-1 px-4 pb-24">
+        <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
           {professions.map((prof) => (
             <button
               key={prof.id}
               onClick={() => handleSelect(prof.id)}
               className={`
-                relative p-5 rounded-2xl shadow-sm border-2 text-left
+                relative p-4 rounded-xl shadow-sm border-2 text-center
                 transition-all duration-300 ease-out
                 hover:shadow-md hover:-translate-y-1
                 ${
@@ -77,24 +77,22 @@ export default function ProfessionPage() {
                 }
               `}
             >
-              <div className="flex items-start gap-4">
-                <span className="text-5xl flex-shrink-0">{prof.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-warm-dark text-lg mb-1">
-                    {prof.name}
-                  </h3>
-                  <p className="text-sm text-warm-dark/50 mb-3">
-                    {prof.desc}
-                  </p>
-                  <span className="inline-block px-3 py-1 bg-warm-accent/10 text-warm-accent text-xs font-medium rounded-full">
-                    {prof.count} 个碎片
-                  </span>
-                </div>
+              <div className="flex flex-col items-center text-center">
+                <span className="text-3xl mb-1">{prof.icon}</span>
+                <h3 className="font-bold text-warm-dark text-sm mb-0.5">
+                  {prof.name}
+                </h3>
+                <p className="text-[10px] text-warm-dark/50 mb-1.5 line-clamp-2 leading-tight">
+                  {prof.desc}
+                </p>
+                <span className="inline-block px-2 py-0.5 bg-warm-accent/10 text-warm-accent text-[9px] font-medium rounded-full">
+                  {prof.count} 碎片
+                </span>
               </div>
 
               {/* 选中指示器 */}
               {selectedId === prof.id && (
-                <div className="absolute top-3 right-3 w-6 h-6 bg-warm-accent rounded-full flex items-center justify-center">
+                <div className="absolute top-2 right-2 w-5 h-5 bg-warm-accent rounded-full flex items-center justify-center">
                   <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>

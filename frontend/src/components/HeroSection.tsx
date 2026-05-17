@@ -43,7 +43,7 @@ export default function HeroSection() {
         </Link>
 
         <p className="text-warm-dark/40 text-sm mt-4">
-          不需要信用卡，选择你的职业，2分钟完成入门
+          选择你的职业，2分钟完成入门
         </p>
       </div>
     </section>
