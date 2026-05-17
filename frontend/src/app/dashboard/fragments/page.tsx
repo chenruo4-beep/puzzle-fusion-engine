@@ -397,7 +397,7 @@ export default function FragmentsPage() {
                     <style>{`.puzzle-card[data-card-id="${f.id}"]::before { background: ${typeColor}; }`}</style>
 
                     {/* Actions (visible on hover) */}
-                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                       <button onClick={() => handleEdit(f)} className="text-warm-dark/30 hover:text-warm-dark/60 text-xs">✎</button>
                       <button onClick={() => handleDelete(f.id)} className="text-warm-dark/30 hover:text-rose-500 text-xs">✕</button>
                     </div>
@@ -420,12 +420,6 @@ export default function FragmentsPage() {
                     {/* 关联发现提示 */}
                     <div className="mt-2 ml-1">
                       <FragmentRelations fragmentId={f.id} compact />
-                    </div>
-
-                    {/* Actions (visible on hover) */}
-                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => handleEdit(f)} className="text-warm-dark/30 hover:text-warm-dark/60 text-xs">✎</button>
-                      <button onClick={() => handleDelete(f.id)} className="text-warm-dark/30 hover:text-rose-500 text-xs">✕</button>
                     </div>
                   </div>
                 );
