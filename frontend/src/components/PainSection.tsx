@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useABTest } from "@/hooks/useABTest";
 
 export default function PainSection() {
@@ -36,12 +37,13 @@ export default function PainSection() {
         </div>
 
         <div className="text-center mt-12">
-          <button
+          <Link
+            href="/onboarding/vision"
             onClick={() => track("cta_click")}
             className="inline-flex items-center gap-2 px-8 py-4 bg-warm-accent text-warm-light rounded-2xl text-lg font-semibold hover:bg-warm-accent/90 transition-all active:scale-[0.98]"
           >
             {content.cta}
-          </button>
+          </Link>
         </div>
       </div>
     </section>

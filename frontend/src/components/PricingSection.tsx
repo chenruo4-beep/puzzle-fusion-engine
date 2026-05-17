@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useABTest } from "@/hooks/useABTest";
 
 export default function PricingSection() {
@@ -15,7 +16,7 @@ export default function PricingSection() {
           {content.subtitle}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
           <div className="bg-warm-light/80 rounded-2xl p-6 shadow-sm">
             <h3 className="text-xl font-bold text-warm-dark mb-6">免费版</h3>
             <ul className="space-y-3 text-warm-dark/70 mb-6">
@@ -64,13 +65,21 @@ export default function PricingSection() {
           </div>
         </div>
 
-        <div className="text-center">
-          <button
+        <div className="text-center space-y-3">
+          <Link
+            href="/onboarding/vision"
             onClick={() => track("cta_click")}
             className="inline-flex items-center gap-2 px-10 py-5 bg-warm-accent text-warm-light rounded-2xl text-xl font-semibold hover:bg-warm-accent/90 transition-all active:scale-[0.98]"
           >
             {content.cta}
-          </button>
+          </Link>
+          <p className="text-xs text-warm-dark/40 flex items-center justify-center gap-3">
+            <span>🔒 随时取消</span>
+            <span>·</span>
+            <span>无隐藏费用</span>
+            <span>·</span>
+            <span>7天无理由退款</span>
+          </p>
         </div>
       </div>
     </section>
