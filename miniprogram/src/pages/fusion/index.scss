@@ -1,0 +1,127 @@
+.profession-input {
+  width: 100%;
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid rgba(184, 160, 136, 0.25);
+  font-size: 15px;
+  color: var(--warm-dark);
+  background: transparent;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.fragment-scroll {
+  max-height: 320px;
+  margin-bottom: 16px;
+}
+
+.frag-select-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1.5px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.frag-select-item.selected {
+  border-color: var(--warm-accent);
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  border: 2px solid #d4c8b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #ffffff;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.checkbox.checked {
+  background-color: var(--warm-accent);
+  border-color: var(--warm-accent);
+}
+
+.frag-text {
+  flex: 1;
+  font-size: 14px;
+  color: var(--warm-dark);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--warm-dark);
+  opacity: 0.5;
+  font-size: 14px;
+}
+
+.loading-text {
+  display: block;
+  text-align: center;
+  padding: 40px 0;
+  color: var(--warm-dark);
+  opacity: 0.5;
+}
+
+.result-card {
+  margin-top: 20px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.result-golden {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--warm-dark);
+  font-style: italic;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.result-confidence {
+  display: block;
+  font-size: 12px;
+  color: var(--warm-accent);
+  margin-bottom: 16px;
+}
+
+.result-directions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.direction-card {
+  background: rgba(184, 160, 136, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.direction-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--warm-dark);
+  margin-bottom: 6px;
+}
+
+.direction-desc {
+  display: block;
+  font-size: 13px;
+  color: var(--warm-dark);
+  opacity: 0.6;
+  line-height: 1.6;
+}

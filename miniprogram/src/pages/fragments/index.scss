@@ -1,0 +1,42 @@
+.container {
+  padding: 16px;
+  min-height: 100vh;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--warm-dark);
+  opacity: 0.5;
+  font-size: 14px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.empty-text {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--warm-dark);
+  margin-bottom: 8px;
+}
+
+.empty-hint {
+  display: block;
+  font-size: 13px;
+  color: var(--warm-dark);
+  opacity: 0.5;
+}
+
+.fragment-list {
+  max-height: calc(100vh - 140px);
+}
