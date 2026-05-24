@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { LightbulbIcon } from '@/components/AppIcons';
 
 /* ---------- 类型 ---------- */
 export interface InspirationDirection {
@@ -62,7 +63,7 @@ export default function InspirationsList({ inspirations, onDelete }: Props) {
   if (inspirations.length === 0) {
     return (
       <div className="text-center py-16 text-warm-dark/40">
-        <div className="text-4xl mb-3">💡</div>
+        <div className="mb-3 text-warm-accent/30"><LightbulbIcon size={40} /></div>
         <p className="text-base font-medium mb-2">还没有灵感火花</p>
         <p className="text-sm max-w-xs mx-auto">
           每次融合后，点击&quot;存入灵感集&quot;按钮，你的关键洞察就会出现在这里

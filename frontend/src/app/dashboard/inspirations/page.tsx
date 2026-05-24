@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import InspirationsList from '@/components/InspirationsList';
+import { SkeletonHeader, SkeletonCard } from '@/components/Skeleton';
 import type { Inspiration } from '@/components/InspirationsList';
+import { LightbulbIcon } from '@/components/AppIcons';
 
 const API_BASE = '/api/inspirations';
 
@@ -68,12 +70,11 @@ export default function InspirationsPage() {
   if (!mounted) {
     return (
       <div className="space-y-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-48 bg-warm-dark/5 rounded" />
-          <div className="h-6 w-72 bg-warm-dark/5 rounded" />
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-warm-dark/5 rounded-2xl" />
-          ))}
+        <SkeletonHeader />
+        <div className="space-y-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
       </div>
     );
@@ -84,7 +85,7 @@ export default function InspirationsPage() {
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-warm-dark">💡 灵感集</h1>
+          <h1 className="text-2xl font-bold text-warm-dark flex items-center gap-2"><LightbulbIcon size={24} className="text-warm-accent" /> 灵感集</h1>
           <p className="text-sm text-warm-dark/40 mt-1">
             你的每一个关键洞察，都像一块拼图等待被拼上
           </p>
@@ -101,12 +102,13 @@ export default function InspirationsPage() {
 
       {/* 加载状态 */}
       {loading && (
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-48 bg-warm-dark/5 rounded" />
-          <div className="h-6 w-72 bg-warm-dark/5 rounded" />
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-warm-dark/5 rounded-2xl" />
-          ))}
+        <div className="space-y-6">
+          <SkeletonHeader />
+          <div className="space-y-3">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
         </div>
       )}
 

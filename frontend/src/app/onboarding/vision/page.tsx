@@ -17,14 +17,20 @@ export default function VisionPage() {
         {/* Logo / Icon */}
         <div className="space-y-3">
           <div className="text-7xl">🧩</div>
-          <h1 className="text-3xl font-bold text-warm-dark">拼图融合引擎</h1>
+          <h1 className="text-3xl font-bold text-warm-dark">拼拼看Me</h1>
         </div>
 
         {/* 产品理念 */}
         <div className="space-y-5">
           <p className="text-lg text-warm-dark/80 leading-relaxed">
-            你身上的每一块碎片，<br/>
-            都是你走过路的最强证据
+            Hi，拼拼看Me。
+          </p>
+          <p className="text-sm text-warm-dark/60 leading-relaxed max-w-xs mx-auto">
+            你身上有很多碎片——你的经验、你的直觉、<br/>
+            你被夸过但自己没当真的那些小事。<br/>
+            它们散落在每天的生活里。<br/>
+            Me做的事很简单：<br/>
+            把它们捡起来，拼出一个你不知道的你自己。
           </p>
 
           <div className="space-y-4 text-left">
@@ -55,8 +61,9 @@ export default function VisionPage() {
 
           <div className="p-4 rounded-xl bg-warm-accent/5 border border-warm-accent/10">
             <p className="text-sm text-warm-dark/70 leading-relaxed">
-              <strong className="text-warm-accent">只需3步：</strong><br/>
-              ① 选职业 → ② 确认碎片 → ③ 看融合结果
+              <strong className="text-warm-accent">别想太多。</strong><br/>
+              你会什么？喜欢什么？别人老找你帮什么？<br/>
+              这些碎片，拼在一起就是Me。
             </p>
           </div>
         </div>
@@ -76,7 +83,7 @@ export default function VisionPage() {
             onClick={() => router.push('/onboarding/profession')}
             className="w-full py-4 bg-warm-accent text-white font-bold text-lg rounded-2xl shadow-lg hover:shadow-xl hover:bg-warm-accent/90 transition-all duration-300 hover:-translate-y-0.5"
           >
-            开始拼图 →
+            开始拼 →
           </button>
           <button
             onClick={() => router.push('/dashboard')}

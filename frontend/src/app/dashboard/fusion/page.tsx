@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 // html2canvas 已由 ShareCard 组件处理
@@ -11,6 +11,8 @@ import PuzzleFusionAnimation from '@/components/PuzzleFusionAnimation';
 import { useDragPuzzle } from '@/hooks/useDragPuzzle';
 import { useMobilePuzzle } from '@/hooks/useMobilePuzzle';
 import ShareCard from '@/components/ShareCard';
+import CapabilitySpectrum from '@/components/CapabilitySpectrum';
+import { authFetch   } from '@/lib/api';
 
 interface FragmentItem {
   type: string;
@@ -43,12 +45,16 @@ interface FusionDirection {
   roadmap?: RoadmapStep[];
   used_fragments: string[];
   next_action: string;
+  common_pitfalls?: string[];
 }
 
 interface FusionResult {
   id?: number;
   golden_sentence: string;
   profile_tag?: string;
+  capability_tags?: string[];
+  capability_signature?: string;
+  user_domains?: string[];
   confidence?: number;
   directions: FusionDirection[];
   insight: string;
@@ -79,8 +85,6 @@ const TYPE_COLORS: Record<string, string> = {
   '性格': '#9b6c4a',
 };
 
-const API_BASE = 'http://localhost:8000';
-
 export default function FusionPage() {
   const { toast } = useToast();
   const [isFusing, setIsFusing] = useState(false);
@@ -96,11 +100,9 @@ export default function FusionPage() {
   const [showFeedbackReason, setShowFeedbackReason] = useState(false);
   const [feedbackReason, setFeedbackReason] = useState('');
   const FEEDBACK_REASONS = [
-    '方向不符合我的预期',
-    '建议不够具体',
-    '碎片匹配不准确',
-    '结果太泛泛',
-    '其他原因',
+    '太笼统',
+    '我试过，行不通',
+    '和我的情况不符',
   ];
 
   // W5-4: 拼图融合可视化动画
@@ -119,14 +121,14 @@ export default function FusionPage() {
     }
     // useful: 直接提交
     try {
-      const res = await fetch(`${API_BASE}/api/fusions/${result.id}/feedback`, {
+      const res = await authFetch(`/api/fusions/${result.id}/feedback`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ feedback: vote, source: 'web' }),
       });
       if (res.ok) {
         setFeedbackState(vote);
-        toast('感谢反馈！我们会持续优化', 'success');
+        toast('收到，我们会继续改进', 'success');
       } else toast('反馈提交失败', 'error');
     } catch {
       toast('反馈提交失败', 'error');
@@ -136,7 +138,7 @@ export default function FusionPage() {
   async function submitFeedbackWithReason(reason: string) {
     if (!result || !result.id) return;
     try {
-      const res = await fetch(`${API_BASE}/api/fusions/${result.id}/feedback`, {
+      const res = await authFetch(`/api/fusions/${result.id}/feedback`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ feedback: 'not_useful', reason, source: 'web' }),
@@ -146,13 +148,18 @@ export default function FusionPage() {
         setShowFeedbackReason(false);
         setFeedbackReason('');
         toast('反馈已记录，我们会据此优化', 'success');
+        authFetch('/api/analytics/report-failure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fusion_id: result.id, profession: profession || undefined, reason }),
+        }).catch(() => {});
       } else toast('反馈提交失败', 'error');
     } catch {
       toast('反馈提交失败', 'error');
     }
   }
 
-  // 创建行进地图
+// 创建行进地图
   async function createJourneyMap(direction: FusionDirection, dirIndex: number, textOnly: boolean = false) {
     try {
       const steps = (direction.roadmap || []).map((step, i) => ({
@@ -167,7 +174,7 @@ export default function FusionPage() {
         position_y: [2, 2, 2, 1, 1][i] || 0,
       }));
 
-      const res = await fetch(`${API_BASE}/api/journey-maps/`, {
+      const res = await authFetch('/api/journey-maps/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -285,7 +292,7 @@ export default function FusionPage() {
         const selectedFragments = dbFragments
           .filter(f => selectedIds.has(f.id))
           .map(f => ({ type: f.fragment_type, content: f.content }));
-        const res = await fetch(`${API_BASE}/api/gap/analyze`, {
+        const res = await authFetch('/api/gap/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -339,7 +346,7 @@ export default function FusionPage() {
 
       // 正常模式：从 API 拉碎片
       try {
-        const res = await fetch(`${API_BASE}/api/fragments/`);
+        const res = await authFetch('/api/fragments/');
         const data = await res.json();
         const fragments: Fragment[] = Array.isArray(data) ? data : [];
         setDbFragments(fragments);
@@ -375,7 +382,6 @@ export default function FusionPage() {
   // }
 
   const isMaxReached = selectedIds.size >= MAX_FRAGMENTS;
-
 
   function toggleFragmentWithLimit(id: string) {
     if (selectedIds.has(id)) {
@@ -522,7 +528,7 @@ export default function FusionPage() {
     }, 800);
 
     try {
-      const response = await fetch(`${API_BASE}/api/fusions/analyze`, {
+      const response = await authFetch('/api/fusions/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -644,7 +650,7 @@ export default function FusionPage() {
 
       (async () => {
         try {
-          const response = await fetch(`${API_BASE}/api/fusions/analyze`, {
+          const response = await authFetch('/api/fusions/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -691,7 +697,7 @@ export default function FusionPage() {
     if (!result) return;
     try {
       const title = result.directions[0]?.title || '融合结果';
-      const response = await fetch(`${API_BASE}/api/fusions/save`, {
+      const response = await authFetch('/api/fusions/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -713,7 +719,7 @@ export default function FusionPage() {
 
   const handleCopy = async () => {
     if (!result) return;
-    const text = `🔮 拼图融合报告\n\n${result.golden_sentence}\n\n${result.directions.map((d, i) =>
+    const text = `🔮 拼拼看Me · 方向探索\n\n${result.golden_sentence}\n\n${result.directions.map((d, i) =>
       `${i + 1}. ${d.title}\n${d.why_this_works || d.description || ''}\n📌 下一步：${d.next_action}`
     ).join('\n\n')}\n\n💡 洞察：${result.insight}`;
     try { await navigator.clipboard.writeText(text); } catch {}
@@ -736,9 +742,9 @@ export default function FusionPage() {
     return (
       <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4">
-          <h3 className="text-lg font-bold text-warm-dark">📌 使用前请了解</h3>
+          <h3 className="text-lg font-bold text-warm-dark">📌 开始前，先看一眼</h3>
           <div className="space-y-2 text-sm text-warm-dark/70 leading-relaxed">
-            <p>拼图融合引擎的分析结果仅供灵感参考，不构成任何投资、商业或职业指导。</p>
+            <p>拼拼看Me的分析结果仅供灵感参考，不构成任何投资、商业或职业指导。</p>
             <p>AI 基于你提供的信息生成建议，可能存在偏差或遗漏。请结合自身实际情况，独立判断风险。</p>
             <p>执行任何建议前，请自行验证可行性，谨慎决策。</p>
           </div>
@@ -772,7 +778,7 @@ export default function FusionPage() {
               <span
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-extrabold"
                 style={{
-                  background: 'linear-gradient(135deg, #d97746, #e8a860)',
+                  background: 'linear-gradient(135deg, var(--warm-orange), #e8a860)',
                   color: 'white',
                   boxShadow: '0 4px 20px rgba(217, 119, 70, 0.35)',
                 }}
@@ -807,9 +813,15 @@ export default function FusionPage() {
           </p>
         </div>
 
+        {/* 能力光谱（Engine 0.1） */}
+        <CapabilitySpectrum
+          activeTags={result.capability_tags}
+          signature={result.capability_signature}
+        />
+
         {/* 融合方向 */}
         <div className="space-y-3">
-          <h2 className="text-sm font-medium text-warm-dark/50 tracking-wide">🎯 融合方向</h2>
+          <h2 className="text-sm font-medium text-warm-dark/50 tracking-wide">这些碎片，指向这几个方向。</h2>
           {result.directions.map((dir, i) => {
             const diff = DIFFICULTY_CONFIG[dir.difficulty || 'medium'];
             const isOpen = expandedDir === i;
@@ -841,7 +853,7 @@ export default function FusionPage() {
                   <div className="px-4 pb-5 space-y-4 border-t border-warm-dark/5 pt-4">
                     {(dir.why_this_works || dir.description) && (
                       <div>
-                        <h4 className="text-xs font-medium text-warm-dark/40 mb-1">为什么这个组合能打</h4>
+                        <h4 className="text-xs font-medium text-warm-dark/40 mb-1">为什么这几块能拼在一起</h4>
                         <p className="text-sm text-warm-dark/80 leading-relaxed">
                           {dir.why_this_works || dir.description}
                         </p>
@@ -853,10 +865,23 @@ export default function FusionPage() {
                         <p className="text-sm text-warm-dark/70">{dir.market_hint}</p>
                       </div>
                     )}
+                    {dir.common_pitfalls && dir.common_pitfalls.length > 0 && (
+                      <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/50">
+                        <h4 className="text-xs font-medium text-amber-700 mb-1.5">⚠️ 新手最常栽的坑</h4>
+                        <ul className="space-y-1">
+                          {dir.common_pitfalls.map((pitfall, pi) => (
+                            <li key={pi} className="text-xs text-amber-700/80 flex items-start gap-1.5">
+                              <span>•</span>
+                              <span>{pitfall}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {dir.roadmap && dir.roadmap.length > 0 && (
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <h4 className="text-xs font-medium text-warm-dark/40">执行路线图</h4>
+                          <h4 className="text-xs font-medium text-warm-dark/40">一条可能的路线</h4>
                           <span className="flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-600 text-xs rounded-full border border-green-200">
                             <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />今日可做
                           </span>
@@ -919,6 +944,20 @@ export default function FusionPage() {
           })}
         </div>
 
+        {/* 用户领域（Engine 0.1） */}
+        {result.user_domains && result.user_domains.length > 0 && (
+          <div className="p-4 rounded-2xl bg-white/60 border border-warm-dark/10">
+            <h3 className="text-xs font-medium text-warm-dark/40 mb-2">📍 感知到你的领域</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {result.user_domains.map((domain, i) => (
+                <span key={i} className="px-2.5 py-1 bg-warm-accent/8 text-warm-accent/80 text-xs rounded-full border border-warm-accent/15">
+                  {domain}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 整体洞察 */}
         <div className="p-5 rounded-2xl bg-warm-light/60 border border-warm-dark/5">
           <h3 className="text-sm font-medium text-warm-dark/50 mb-2">💡 整体洞察</h3>
@@ -928,7 +967,7 @@ export default function FusionPage() {
         {/* 能力缺口 */}
         {result.skill_gaps && result.skill_gaps.length > 0 && (
           <div className="p-5 rounded-2xl bg-white/60 border border-warm-dark/10">
-            <h3 className="text-sm font-medium text-warm-dark/50 mb-3">🔧 你离更强还差这些拼图</h3>
+            <h3 className="text-sm font-medium text-warm-dark/50 mb-3">🔧 还差这几块碎片</h3>
             <div className="space-y-2">
               {result.skill_gaps.map((gap, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm text-warm-dark/70">
@@ -961,7 +1000,7 @@ export default function FusionPage() {
 
         {/* 分享卡片 */}
         <div className="border-t border-warm-dark/10 pt-6">
-          <h3 className="text-sm font-medium text-warm-dark/50 mb-4 text-center">📸 生成分享卡片</h3>
+          <h3 className="text-sm font-medium text-warm-dark/50 mb-4 text-center">📸 做个分享卡片</h3>
           <ShareCard
             goldenSentence={result.golden_sentence}
             profession={profession}
@@ -977,7 +1016,7 @@ export default function FusionPage() {
             onClick={handleSave}
             className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${saved ? 'bg-emerald-100 text-emerald-700' : 'bg-warm-accent text-white hover:bg-warm-accent/90'}`}
           >
-            {saved ? '✅ 已保存' : '💾 保存结果'}
+            {saved ? '✅ 已留下' : '💾 留个记录'}
           </button>
           <button
             onClick={handleCopy}
@@ -987,13 +1026,13 @@ export default function FusionPage() {
                 : 'bg-warm-dark/10 text-warm-dark hover:bg-warm-dark/20'
             }`}
           >
-            {copied ? '✅ 已复制' : '📋 复制报告'}
+            {copied ? '✅ 已复制' : '📋 复制一份'}
           </button>
           <button
             onClick={handleReset}
             className="px-5 py-2 bg-warm-dark/5 text-warm-dark/60 rounded-xl text-sm font-medium hover:bg-warm-dark/10 transition-colors"
           >
-            🔄 重新融合
+            🔄 再看看别的
           </button>
         </div>
 
@@ -1001,7 +1040,7 @@ export default function FusionPage() {
         <div className="space-y-3 pb-4">
           {/* 有用/无用反馈 */}
           <div className="flex items-center justify-center gap-4">
-            <span className="text-xs text-warm-dark/40">这个融合结果对你有用吗？</span>
+            <span className="text-xs text-warm-dark/40">这个方向能落地吗？</span>
             <button
               onClick={() => handleFeedback('useful')}
               disabled={feedbackState !== 'idle'}
@@ -1013,7 +1052,7 @@ export default function FusionPage() {
                   : 'text-warm-dark/50 border-transparent hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200'
               }`}
             >
-              👍 有用
+              可行的
             </button>
             <button
               onClick={() => handleFeedback('not_useful')}
@@ -1026,7 +1065,7 @@ export default function FusionPage() {
                   : 'text-warm-dark/50 border-transparent hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
               }`}
             >
-              👎 没用
+              不切实际
             </button>
           </div>
 
@@ -1034,8 +1073,8 @@ export default function FusionPage() {
           {showFeedbackReason && (
             <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4">
-                <h3 className="text-lg font-bold text-warm-dark">💬 帮助我们改进</h3>
-                <p className="text-sm text-warm-dark/60">这个结果为什么没有帮助到你？</p>
+                <h3 className="text-lg font-bold text-warm-dark">说说哪里不切实际</h3>
+                <p className="text-sm text-warm-dark/60">选一个最接近的原因：</p>
                 <div className="space-y-2">
                   {FEEDBACK_REASONS.map((reason) => (
                     <button
@@ -1098,7 +1137,7 @@ export default function FusionPage() {
               继续使用即表示您已阅读并理解上述声明。
             </p>
             <p className="text-[10px] text-warm-dark/20 text-center pt-1">
-              © 拼图融合引擎 · AI 生成内容仅供参考
+              — 拼拼看Me · AI 生成内容仅供参考
             </p>
           </div>
         </div>
@@ -1110,16 +1149,16 @@ export default function FusionPage() {
   if (isFusing) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">融合引擎</h1>
+        <h1 className="text-2xl font-bold">拼个方向</h1>
         <div className="mt-4 p-12 rounded-2xl bg-white/60 border border-warm-dark/10 text-center">
           <div className="text-5xl mb-4 animate-bounce">🧩</div>
           <h3 className="text-xl font-bold text-warm-dark mb-4">
-            {loadingStep <= 1 && '🔍 正在识别你的能力类型...'}
-            {loadingStep === 2 && '🧠 正在用8刃切割法分析...'}
-            {loadingStep === 3 && '💡 正在寻找最有力的组合方向...'}
-            {loadingStep === 4 && '🔗 正在验证碎片间的连接...'}
-            {loadingStep >= 5 && loadingStep < 8 && '📋 正在生成你的行动方案...'}
-            {loadingStep >= 8 && '✨ 马上就好...'}
+            {loadingStep <= 1 && '🔍 Me在识别这些碎片……'}
+            {loadingStep === 2 && '🧠 Me在试着理解碎片间的关联……'}
+            {loadingStep === 3 && '💡 Me在寻找可能的组合方向……'}
+            {loadingStep === 4 && '🔗 Me在验证碎片间的连接……'}
+            {loadingStep >= 5 && loadingStep < 8 && '📋 Me在整理可行的方向……'}
+            {loadingStep >= 8 && '✨ Me快拼好了……'}
           </h3>
           {/* 拼图片段进度条 — 替代简单百分比条 */}
           <div className="flex items-center justify-center gap-1.5 mt-4">
@@ -1140,7 +1179,7 @@ export default function FusionPage() {
             })}
           </div>
           <p className="text-xs text-warm-dark/30 mt-4">
-            {loadingStep <= 2 ? '第一步：把碎片分类到8个维度' : loadingStep <= 4 ? '第二步：找到你的组合技' : loadingStep <= 6 ? '第三步：生成行动方案' : '最后一步：润色输出'}
+            {loadingStep <= 2 ? '第一步：看看有哪些碎片类型' : loadingStep <= 4 ? '第二步：想想怎么组合' : loadingStep <= 6 ? '第三步：整理一下方向' : '最后一步：收尾中'}
           </p>
         </div>
       </div>
@@ -1151,7 +1190,7 @@ export default function FusionPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">融合引擎</h1>
+        <h1 className="text-2xl font-bold">拼个方向</h1>
         <div className="mt-4 p-8 rounded-2xl bg-white/60 border border-warm-dark/10 text-center">
           <div className="text-4xl mb-4">😅</div>
           <h3 className="text-xl font-bold text-warm-dark mb-2">出了点小问题</h3>
@@ -1191,12 +1230,12 @@ export default function FusionPage() {
   if (dbFragments.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">融合引擎</h1>
+        <h1 className="text-2xl font-bold">拼个方向</h1>
         <EmptyState
           icon="🧩"
-          title="还差几块拼图片"
-          description="融合需要至少3块拼图片。别急，先去收集你的第一块。"
-          action={{ label: '→ 去收集拼图片', onClick: () => window.location.href = '/dashboard/fragments' }}
+          title="还没有碎片"
+          description="别想太多。你会什么？喜欢什么？别人老找你帮什么？先去随手记写点什么吧。"
+          action={{ label: '→ 去随手记', onClick: () => window.location.href = '/dashboard/fragments' }}
         />
       </div>
     );
@@ -1221,9 +1260,9 @@ export default function FusionPage() {
         />
       )}
       <div>
-        <h1 className="text-2xl font-bold text-warm-dark">融合引擎</h1>
+        <h1 className="text-2xl font-bold text-warm-dark">拼个方向</h1>
         <p className="text-sm text-warm-dark/50 mt-1">
-          选择想要融合的碎片，让 AI 发现你的隐藏组合技
+          用你的几块碎片，试着拼一个方向。不一定对，但可以试试。
         </p>
       </div>
 
@@ -1239,7 +1278,7 @@ export default function FusionPage() {
       <div className="px-4 py-3 rounded-xl bg-white/40 border border-warm-dark/5">
         <div className="flex items-center justify-between mb-1.5">
           <label className="text-xs text-warm-dark/40">
-            🎯 你有没有憧憬的工作或想完成的事业？（选填）
+            🎯 有没有憧憬的方向？（选填）
           </label>
           <span className={`text-xs ${goal.length > MAX_GOAL_LENGTH ? 'text-rose-500 font-medium' : 'text-warm-dark/30'}`}>
             {goal.length}/{MAX_GOAL_LENGTH}
@@ -1258,7 +1297,7 @@ export default function FusionPage() {
       {/* W3-5: 参考图目标选择器 */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-xs text-warm-dark/40">🖼️ 选择参考图目标（选填）</label>
+          <label className="text-xs text-warm-dark/40">🖼️ 想往哪个方向走？（选填）</label>
           {referenceTarget && (
             <button
               onClick={() => { setReferenceTarget(null); setShowReferenceOverlay(false); }}
@@ -1290,7 +1329,7 @@ export default function FusionPage() {
         </div>
         {referenceTarget && (
           <p className="text-xs text-warm-dark/30">
-            拼图板将显示「{referenceTarget}」的参考轮廓，帮助你更有针对性地选择碎片
+            拼图板会显示「{referenceTarget}」的参考轮廓，帮你更有方向地捡碎片
           </p>
         )}
       </div>
@@ -1306,7 +1345,7 @@ export default function FusionPage() {
             <div className="flex items-center gap-2">
               <span className="text-lg">{gapAnalysis.has_enough_fragments ? '✅' : '🔍'}</span>
               <span className="text-sm font-bold text-warm-dark">
-                缺口分析 — {referenceTarget}
+                缺了哪些碎片 — {referenceTarget}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -1366,7 +1405,7 @@ export default function FusionPage() {
                           ? 'bg-amber-100 text-amber-600'
                           : 'bg-warm-dark/5 text-warm-dark/40'
                       }`}>
-                        {g.severity === 'high' ? '严重缺口' : g.severity === 'medium' ? '中等缺口' : '轻微缺口'}
+                        {g.severity === 'high' ? '挺缺的' : g.severity === 'medium' ? '还需要一些' : '差不多够了'}
                       </span>
                     </div>
                     <p className="text-warm-dark/70">💡 {g.suggestion}</p>
@@ -1378,7 +1417,7 @@ export default function FusionPage() {
           )}
           {gapAnalysis.gaps.length === 0 && (
             <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200/60 text-xs text-emerald-700">
-              🎉 碎片类型覆盖完善！可以直接开始融合。
+              🎉 碎片类型差不多了！可以试试拼一下。
             </div>
           )}
         </div>
@@ -1386,7 +1425,7 @@ export default function FusionPage() {
       {gapLoading && referenceTarget && (
         <div className="p-4 rounded-2xl bg-warm-light/40 border border-warm-dark/10 text-center">
           <span className="inline-block animate-spin text-lg mr-2">🔄</span>
-          <span className="text-xs text-warm-dark/50">正在分析碎片缺口...</span>
+          <span className="text-xs text-warm-dark/50">Me在看看还缺什么碎片……</span>
         </div>
       )}
 
@@ -1407,7 +1446,7 @@ export default function FusionPage() {
               {referenceTarget}
             </div>
             <div className="reference-goal-subtitle">
-              选择匹配的碎片放入此区域
+              把合适的碎片放进来
             </div>
             {/* 缺口指示器（装饰性） */}
             <div className="reference-gap" style={{ left: '15%', top: '20%' }} />
@@ -1426,27 +1465,27 @@ export default function FusionPage() {
       {/* 步骤引导（首次用户未选中任何碎片时展示） */}
       {selectedIds.size === 0 && (
         <div className="p-5 rounded-2xl bg-gradient-to-br from-warm-accent/5 via-warm-accent/3 to-transparent border border-warm-accent/15 space-y-3">
-          <h3 className="text-sm font-bold text-warm-dark">🎯 三步完成融合</h3>
+          <h3 className="text-sm font-bold text-warm-dark">🎯 三步，试着拼一下</h3>
           <div className="space-y-2.5">
             <div className="flex items-start gap-3">
               <span className="shrink-0 w-6 h-6 rounded-full bg-warm-accent text-white text-xs font-bold flex items-center justify-center mt-0.5">1</span>
               <div>
-                <p className="text-sm font-medium text-warm-dark">设定目标（选填）</p>
-                <p className="text-xs text-warm-dark/50">告诉引擎你憧憬的方向，让 AI 更有针对性地分析</p>
+                <p className="text-sm font-medium text-warm-dark">定个方向（选填）</p>
+                <p className="text-xs text-warm-dark/50">告诉Me你憧憬的方向，让分析更有针对性</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="shrink-0 w-6 h-6 rounded-full bg-warm-accent text-white text-xs font-bold flex items-center justify-center mt-0.5">2</span>
               <div>
-                <p className="text-sm font-medium text-warm-dark">选择拼图片</p>
-                <p className="text-xs text-warm-dark/50">勾选至少 <strong>3</strong> 个拼图片，或点击类型标签一键批量选择</p>
+                <p className="text-sm font-medium text-warm-dark">捡几块碎片</p>
+                <p className="text-xs text-warm-dark/50">勾选至少 <strong>3</strong> 个碎片，或者点分类标签筛选</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="shrink-0 w-6 h-6 rounded-full bg-warm-accent/30 text-warm-accent text-xs font-bold flex items-center justify-center mt-0.5">3</span>
               <div>
-                <p className="text-sm font-medium text-warm-dark">开始融合</p>
-                <p className="text-xs text-warm-dark/50">点击底部按钮，AI 会分析你的拼图片，生成融合方向</p>
+                <p className="text-sm font-medium text-warm-dark">拼一下</p>
+                <p className="text-xs text-warm-dark/50">点底部按钮，Me会帮你看这些碎片能拼出什么</p>
               </div>
             </div>
           </div>
@@ -1457,10 +1496,10 @@ export default function FusionPage() {
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <span className="text-sm text-warm-dark/50">
-            已选 <span className="font-bold text-warm-accent">{selectedIds.size}</span> 个
-            <span className="text-warm-dark/30"> / {dbFragments.length} 个碎片</span>
+            捡了 <span className="font-bold text-warm-accent">{selectedIds.size}</span> 块
+            <span className="text-warm-dark/30"> / {dbFragments.length} 块碎片</span>
             {isMaxReached && (
-              <span className="ml-2 text-xs text-amber-600 font-medium">上限{MAX_FRAGMENTS}个</span>
+              <span className="ml-2 text-xs text-amber-600 font-medium">上限{MAX_FRAGMENTS}块</span>
             )}
             {/* W5-3: 试探预览指示器 */}
             {trialFragmentId && !trialBounce && (
@@ -1478,12 +1517,12 @@ export default function FusionPage() {
             onClick={() => setSelectedIds(prev => prev.size === dbFragments.length ? new Set() : new Set(dbFragments.map(f => f.id)))}
             className="text-xs text-warm-accent hover:underline"
           >
-            {selectedIds.size >= dbFragments.length ? '取消全选' : '全选'}
+            {selectedIds.size >= dbFragments.length ? '都不选' : '全捡'}
           </button>
         </div>
         {/* 按类型筛选显示（修复：不再全选碎片） */}
         <div className="flex flex-wrap gap-1.5 items-center">
-          <span className="text-xs text-warm-dark/30 mr-1">筛选：</span>
+          <span className="text-xs text-warm-dark/30 mr-1">看看：</span>
           {Object.entries(grouped).map(([type, frags]) => {
             const isActive = activeFilters.has(type);
             const allCount = (frags || []).length;
@@ -1507,7 +1546,7 @@ export default function FusionPage() {
               onClick={clearAllFilters}
               className="text-xs text-warm-dark/30 hover:text-warm-accent transition-colors ml-1"
             >
-              清除筛选
+              全看
             </button>
           )}
         </div>
@@ -1591,7 +1630,7 @@ export default function FusionPage() {
                         e.stopPropagation();
                         try {
                           const exclude = Array.from(selectedIds).join(',');
-                          const res = await fetch(`${API_BASE}/api/fragments/recommend?target_id=${f.id}&exclude_ids=${exclude}&limit=5`);
+                          const res = await authFetch(`/api/fragments/recommend?target_id=${f.id}&exclude_ids=${exclude}&limit=5`);
                           const data = await res.json();
                           if (data.recommendations && data.recommendations.length > 0) {
                             setRecModal({
@@ -1693,10 +1732,10 @@ export default function FusionPage() {
             >
               <div className="drop-zone-icon text-3xl mb-1">🧩</div>
               <p className="text-sm font-medium text-warm-dark/50">
-                {isOverDrop ? '✨ 松开预览咬合' : '拖到这里试放拼图片'}
+                {isOverDrop ? '✨ 松开试试看' : '拖到这里试试'}
               </p>
               <p className="text-xs text-warm-dark/30 mt-0.5">
-                长按拼图片卡片开始拖拽 → 放到此处预览
+                长按碎片卡片开始拖拽 → 放到此处看看
               </p>
             </div>
           );
@@ -1713,10 +1752,10 @@ export default function FusionPage() {
               {mobileSnap.phase === 'snapping' && <div className="mobile-snap-ripple" />}
               <div className="text-3xl mb-1 animate-bounce">👆</div>
               <p className="text-sm font-bold text-warm-accent">
-                {mobileSnap.phase === 'snapping' ? '✨ 预览中...' : '点这里试放拼图片'}
+                {mobileSnap.phase === 'snapping' ? '✨ 看看效果...' : '点这里试试'}
               </p>
               <p className="text-xs text-warm-dark/30 mt-0.5">
-                长按选中拼图片 → 点击此处预览
+                长按选中碎片 → 点击此处看看
               </p>
             </div>
           );
@@ -1731,16 +1770,16 @@ export default function FusionPage() {
           disabled={selectedIds.size < MIN_FRAGMENTS || selectedIds.size > MAX_FRAGMENTS || !!goalError}
           className="w-full py-3 bg-warm-accent text-white rounded-2xl text-lg font-bold shadow-lg hover:shadow-xl enabled:hover:bg-warm-accent/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300"
         >
-          ⚡ 开始融合（{selectedIds.size}/{MAX_FRAGMENTS}）
+          ⚡ 拼拼看这个（{selectedIds.size}/{MAX_FRAGMENTS}）
         </button>
         {selectedIds.size === 0 && (
-          <p className="text-xs text-warm-dark/30 text-center mt-2">从上方选择至少 {MIN_FRAGMENTS} 个碎片</p>
+          <p className="text-xs text-warm-dark/30 text-center mt-2">在上方捡至少 {MIN_FRAGMENTS} 块碎片</p>
         )}
         {selectedIds.size > 0 && selectedIds.size < MIN_FRAGMENTS && (
-          <p className="text-xs text-warm-dark/40 text-center mt-2">还差 {MIN_FRAGMENTS - selectedIds.size} 个，建议选 {MIN_FRAGMENTS}+ 个效果更好</p>
+          <p className="text-xs text-warm-dark/40 text-center mt-2">还差 {MIN_FRAGMENTS - selectedIds.size} 块碎片，凑够 {MIN_FRAGMENTS}+ 块效果更好</p>
         )}
         {isMaxReached && (
-          <p className="text-xs text-amber-600 text-center mt-2">已达上限 {MAX_FRAGMENTS} 个，取消部分碎片后继续</p>
+          <p className="text-xs text-amber-600 text-center mt-2">已达上限 {MAX_FRAGMENTS} 块，先拿掉几块再继续</p>
         )}
       </div>
 

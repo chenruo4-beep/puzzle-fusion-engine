@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ThemeToggle from "@/components/ThemeToggle";
+import AuthGuard from "@/components/AuthGuard";
 
 export const metadata: Metadata = {
-  title: "拼图融合引擎 — 3分钟找到你的副业方向",
-  description: "把你散落的能力碎片，拼成能变现的完整作品。AI自动识别你的技能组合，发现隐藏副业机会。",
-  keywords: ["副业", "技能变现", "职业规划", "AI工具", "碎片融合"],
-  authors: [{ name: "拼图融合引擎" }],
+  title: "拼拼看Me — 把你本来就有的东西，拼出一个自己",
+  description: "你身上散落着很多碎片——你的经验、直觉、被夸过但自己没当真的小事。Me帮你把它们捡起来，拼拼看。",
+  keywords: ["自我认知", "能力发现", "碎片融合", "AI工具", "拼拼看"],
+  authors: [{ name: "拼拼看Me" }],
   openGraph: {
-    title: "拼图融合引擎 — 3分钟找到你的副业方向",
-    description: "把你散落的能力碎片，拼成能变现的完整作品",
+    title: "拼拼看Me — 把你本来就有的东西，拼出一个自己",
+    description: "你身上散落着很多碎片。Me帮你把它们捡起来，拼出一个你不知道的自己。",
     type: "website",
   },
 };
@@ -26,7 +27,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="antialiased">
-        {children}
+        <AuthGuard>{children}</AuthGuard>
         <ThemeToggle />
       </body>
     </html>

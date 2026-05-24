@@ -12,6 +12,7 @@ const config: Config = {
           dark: '#3c3a37',
           light: '#f5f0eb',
           accent: '#b8a088',
+          orange: '#d97746',
           bg: '#e8e0d5',
           success: '#5a7a5a',
         },

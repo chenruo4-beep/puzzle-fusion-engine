@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HeroSection from "@/components/HeroSection";
 import SmartLogInput from "@/components/SmartLogInput";
@@ -12,8 +12,23 @@ const PainSection = dynamic(() => import("@/components/PainSection"));
 const SocialProofSection = dynamic(() => import("@/components/SocialProofSection"));
 const PricingSection = dynamic(() => import("@/components/PricingSection"));
 
+
 export default function Home() {
   const [showMoreCases, setShowMoreCases] = useState(false);
+  const [fragmentCount, setFragmentCount] = useState<number | null>(null);
+  const [hasActiveCoCreation, setHasActiveCoCreation] = useState(false);
+
+  useEffect(() => {
+    // 静默获取用户状态，用于渐进式展示
+    authFetch('/api/fragments/')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setFragmentCount(data.length); })
+      .catch(() => {});
+    authFetch('/api/co-creation/')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data) && data.length > 0) setHasActiveCoCreation(true); })
+      .catch(() => {});
+  }, []);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-warm-light to-warm-bg">
@@ -28,74 +43,70 @@ export default function Home() {
       {/* Section 2: 痛点共鸣区（A/B测试） */}
       <PainSection />
 
-      {/* Section 3: 产品哲学 —— 我的旅途 / 我们的旅途 */}
+      {/* Section 3: 你的旅途 — 聚焦个人成长，合拍作为渐进入口 */}
       <section className="py-20 px-6 bg-white/50">
-        <div className="max-w-4xl mx-auto">
-          {/* 标题 */}
+        <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-warm-dark mb-4">
-              两种旅途，同一种拼图语言
+              你不需要更多能力，你需要的是看见。
             </h2>
             <p className="text-warm-dark/60 max-w-xl mx-auto">
-              无论你是独自前行，还是和某个人一起，拼图融合都能帮你看见——
-              你已经拥有的，和可能一起创造的。
+              把你已有的碎片拼在一起，Me帮你看看——能拼出什么你想不到的方向。
             </p>
           </div>
 
-          {/* 两层卡片 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 我的旅途 */}
-            <div className="bg-gradient-to-br from-warm-light/80 to-warm-bg/80 rounded-2xl p-6 border border-warm-accent/10 hover:border-warm-accent/30 transition-colors">
-              <div className="text-3xl mb-3">🚶</div>
-              <h3 className="font-semibold text-warm-dark mb-2 text-lg">我的旅途</h3>
-              <p className="text-sm text-warm-dark/70 mb-4">
-                一个人的碎片，拼成一个人的方向。
-                你不是没能力，只是还没看到已有的拼图片能拼出什么。
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
-                  <span className="text-warm-accent">🧩</span> 个人碎片永久保存
+          {/* 主入口：我的旅途 */}
+          <div className="bg-gradient-to-br from-warm-light/80 to-warm-bg/80 rounded-2xl p-8 border border-warm-accent/10 mb-6">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div className="flex-1">
+                <div className="text-3xl mb-3">🧩</div>
+                <h3 className="font-semibold text-warm-dark mb-2 text-xl">先拼自己</h3>
+                <p className="text-sm text-warm-dark/70 mb-4 max-w-md">
+                  把你的碎片放进来，Me告诉你这些碎片指向什么方向。不是算命，是把你已经有的东西摆出来看看。
+                </p>
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <span className="text-xs px-3 py-1.5 bg-warm-accent/10 text-warm-accent rounded-full">🧩 碎片入库</span>
+                  <span className="text-xs px-3 py-1.5 bg-warm-accent/10 text-warm-accent rounded-full">🔄 AI融合</span>
+                  <span className="text-xs px-3 py-1.5 bg-warm-accent/10 text-warm-accent rounded-full">🌱 行动闭环</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
-                  <span className="text-warm-accent">🔄</span> 组合发现新可能
-                </div>
-                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
-                  <span className="text-warm-accent">🌱</span> 越拼越多，持续成长
-                </div>
+                {fragmentCount !== null && (
+                  <p className="text-xs text-warm-dark/40 mb-4">
+                    已有 {fragmentCount} 个碎片{fragmentCount >= 5 ? '—— 足够看到一些轮廓了' : '，继续收集'}
+                  </p>
+                )}
+                <Link href="/onboarding/profession">
+                  <button className="px-6 py-2.5 bg-warm-accent text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+                    看看我的碎片能拼出什么
+                  </button>
+                </Link>
               </div>
-              <Link href="/onboarding/profession">
-                <button className="mt-4 w-full py-2.5 bg-warm-accent text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
-                  开始我的旅途
-                </button>
-              </Link>
-            </div>
-
-            {/* 我们的旅途 */}
-            <div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 rounded-2xl p-6 border border-indigo-200/30 hover:border-indigo-300/50 transition-colors">
-              <div className="text-3xl mb-3">🤝</div>
-              <h3 className="font-semibold text-warm-dark mb-2 text-lg">我们的旅途</h3>
-              <p className="text-sm text-warm-dark/70 mb-4">
-                两个人的碎片，能不能拼成更大的未来？
-                合拍分析帮你看见——你们是否适合一起出发。
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
-                  <span className="text-indigo-500">🧩</span> 双人碎片组合分析
-                </div>
-                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
-                  <span className="text-indigo-500">📊</span> 契合潜力值评估
-                </div>
-                <div className="flex items-center gap-2 text-sm text-warm-dark/60">
-                  <span className="text-indigo-500">🗺️</span> 共同行进地图
-                </div>
-              </div>
-              <Link href="/dashboard/co-creation">
-                <button className="mt-4 w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
-                  开始我们的旅途
-                </button>
-              </Link>
+              <div className="hidden sm:block text-7xl opacity-20">🧩</div>
             </div>
           </div>
+
+          {/* 合拍入口（轻量展示，不喧宾夺主） */}
+          {fragmentCount !== null && fragmentCount >= 3 && (
+            <div className={`bg-gradient-to-br from-indigo-50/80 to-purple-50/80 rounded-2xl p-6 border border-indigo-200/30 transition-all ${fragmentCount < 3 ? 'opacity-50' : 'hover:opacity-100'}`}>
+              <div className="flex items-start justify-between flex-wrap gap-4">
+                <div className="flex-1">
+                  <div className="text-3xl mb-3">🤝</div>
+                  <div className="text-sm text-warm-dark/70">
+                    <p className="mb-2">
+                      {fragmentCount >= 8
+                        ? '你的碎片已经足够拼出一幅自画像了。要不要找个人，看看你们能拼出什么？'
+                        : fragmentCount >= 5
+                          ? '有些方向，一个人看不完整。也许，值得找人共同看看。'
+                          : '当你准备好与另一个人同行，两段旅途可以在这里交汇。'
+                      }
+                    </p>
+                    <Link href="/dashboard/co-creation" className="text-indigo-500 hover:text-indigo-600 font-medium text-sm">
+                      {hasActiveCoCreation ? '继续我们的旅途 →' : '去看看合拍 →'}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -107,25 +118,26 @@ export default function Home() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="text-5xl mb-6">🧩</div>
           <h2 className="text-2xl sm:text-3xl font-bold text-warm-dark mb-6">
-            不必等到「拼完」才感到成就
+            不必等到「拼完」才看到方向
           </h2>
           <p className="text-lg text-warm-dark/70 leading-relaxed max-w-2xl mx-auto">
-            每一次把两块拼图片放在一起，都是一次发现。
-            我们记录你每一次拼合——即使未完成，也是成长。
+            每次融合，Me都会给你一个具体的下一步。不是鸡汤，是今天就能做的事。
           </p>
           <p className="text-sm text-warm-dark/50 mt-4 italic">
-            老师不觉得自己能卖课，骑手不觉得自己能拍视频——
-            拼图融合帮你看见，你已经拥有的。
+            老师不觉得自己能卖课，骑手不觉得自己会拍视频——Me帮你看见，你已经拥有的。
           </p>
         </div>
       </section>
 
-      {/* Section 4: ChatGPT对比表 */}
+      {/* Section 4: 为什么拼拼看Me不同 */}
       <section className="py-20 px-6 bg-warm-bg">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center text-warm-dark mb-12">
-            ChatGPT做不到的事
+          <h2 className="text-3xl sm:text-4xl font-bold text-center text-warm-dark mb-4">
+            AI遍地都是，缺的是把你的碎片记住的人
           </h2>
+          <p className="text-center text-warm-dark/50 mb-12 max-w-2xl mx-auto">
+            通用AI聊完就忘。Me记住你的每一块碎片，越拼越准。
+          </p>
 
           <div className="overflow-x-auto">
             <table className="w-full bg-white/80 rounded-2xl shadow-sm overflow-hidden">
@@ -133,7 +145,7 @@ export default function Home() {
                 <tr>
                   <th className="px-6 py-4 text-left text-warm-dark font-semibold">对比项</th>
                   <th className="px-6 py-4 text-center text-warm-dark font-semibold">ChatGPT</th>
-                  <th className="px-6 py-4 text-center text-warm-dark font-semibold">拼图融合引擎</th>
+                  <th className="px-6 py-4 text-center text-warm-dark font-semibold">拼拼看Me</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-warm-dark/10">
@@ -171,9 +183,12 @@ export default function Home() {
       {/* Section 5: 真实案例：老师王姐（主案例） */}
       <section className="py-20 px-6 bg-white/50">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center text-warm-dark mb-12">
-            真实案例：中学老师王姐的拼图融合
+          <h2 className="text-3xl sm:text-4xl font-bold text-center text-warm-dark mb-4">
+            老师王姐没学新东西，月收入多了 4000
           </h2>
+          <p className="text-center text-warm-dark/50 mb-12 max-w-2xl mx-auto">
+            她只是把每天都在做的事，拼在了一起。
+          </p>
 
           {/* 用户画像 */}
           <div className="bg-warm-light/60 rounded-2xl p-6 mb-8 border-l-4 border-warm-accent">
@@ -293,6 +308,9 @@ export default function Home() {
           <p className="text-center text-xl font-bold text-warm-dark">
             你每天都在用的能力，可能就是别人愿意付费的技能。
           </p>
+          <p className="text-center text-sm text-warm-dark/50 mt-4">
+            不需要学新东西。你已有的，就够了。
+          </p>
         </div>
       </section>
 
@@ -332,8 +350,8 @@ export default function Home() {
 
               {/* 更多案例占位 */}
               <div className="bg-white/50 rounded-2xl p-6 border border-dashed border-warm-accent/30 text-center">
-                <p className="text-warm-dark/50">更多真实案例持续更新中...</p>
-                <p className="text-warm-dark/40 text-sm mt-1">你的故事，可能就是下一个</p>
+                <p className="text-warm-dark/50">更多案例更新中...</p>
+                <p className="text-warm-dark/40 text-sm mt-1">下一个可能就是你</p>
               </div>
             </div>
           )}
@@ -343,33 +361,36 @@ export default function Home() {
       {/* Section 6: 核心功能 */}
       <section className="py-20 px-6 bg-warm-bg">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center text-warm-dark mb-12">
-            每一个功能，都是一块拼图
+          <h2 className="text-3xl sm:text-4xl font-bold text-center text-warm-dark mb-4">
+            怎么拼？
           </h2>
+          <p className="text-center text-warm-dark/50 mb-12 max-w-2xl mx-auto">
+            四步循环。每一步都不难，难的是你一直没看见自己有什么。
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="bg-white/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border-2 border-warm-accent/40">
               <div className="text-4xl mb-4">🧩</div>
-              <h3 className="text-lg font-semibold text-warm-dark mb-2">拼图片入库</h3>
-              <p className="text-warm-dark/70">技能/爱好/知识/经历一键入库，AI自动分类打标签</p>
+              <h3 className="text-lg font-semibold text-warm-dark mb-2">1. 碎片入库</h3>
+              <p className="text-warm-dark/70">你会什么、喜欢什么、别人老找你帮什么——记下来。AI自动分类。</p>
             </div>
 
             <div className="bg-white/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border-2 border-warm-accent/40">
               <div className="text-4xl mb-4">⚡</div>
-              <h3 className="text-lg font-semibold text-warm-dark mb-2">主动融合</h3>
-              <p className="text-warm-dark/70">点击「融合」，AI用8刃切割输出金句+行动方案</p>
+              <h3 className="text-lg font-semibold text-warm-dark mb-2">2. AI融合</h3>
+              <p className="text-warm-dark/70">把你的碎片拼在一起，Me告诉你能拼出什么方向。不是鸡汤，是具体建议。</p>
             </div>
 
             <div className="bg-white/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border-2 border-warm-accent/40">
-              <div className="text-4xl mb-4">📦</div>
-              <h3 className="text-lg font-semibold text-warm-dark mb-2">输出多样</h3>
-              <p className="text-warm-dark/70">可执行行动卡 + 观点卡 + 口播脚本 + 案例卡</p>
+              <div className="text-4xl mb-4">🚶</div>
+              <h3 className="text-lg font-semibold text-warm-dark mb-2">3. 迈出第一步</h3>
+              <p className="text-warm-dark/70">每个方向配一个今天就能做的具体动作。不是说教，是具体的可操作的事。</p>
             </div>
 
             <div className="bg-white/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border-2 border-warm-accent/40">
               <div className="text-4xl mb-4">🔄</div>
-              <h3 className="text-lg font-semibold text-warm-dark mb-2">成长循环</h3>
-              <p className="text-warm-dark/70">打卡→反馈→新拼图片→再融合，越用越准</p>
+              <h3 className="text-lg font-semibold text-warm-dark mb-2">4. 反馈迭代</h3>
+              <p className="text-warm-dark/70">做了之后回来告诉Me结果，新的碎片进来，下次融合更准确。</p>
             </div>
           </div>
         </div>
@@ -380,11 +401,10 @@ export default function Home() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-warm-dark mb-4">
-              你的成长，看得见
+              拼到哪一步了？地图上看得见
             </h2>
             <p className="text-lg text-warm-dark/70 max-w-2xl mx-auto">
-              每个融合方向都会生成一张行进地图，
-              像玩游戏一样推进你的副业计划
+              每个方向生成一张行进地图。不是画饼，是每一步都标好了。
             </p>
           </div>
 
@@ -464,20 +484,19 @@ export default function Home() {
       {/* Section 8: 底部CTA */}
       <section className="py-20 px-6 bg-warm-dark">
         <div className="max-w-2xl mx-auto text-center">
+          <p className="text-warm-light/50 text-sm mb-6">你做过的事，藏着你的下一步。</p>
           <Link
             href="/onboarding/vision"
             className="inline-flex items-center gap-2 px-10 py-5 bg-warm-accent text-warm-light rounded-2xl text-xl font-semibold hover:bg-warm-accent/90 hover:shadow-lg hover:shadow-warm-accent/20 transition-all active:scale-[0.98] mb-4"
           >
-            开始融合
+            看看我的碎片能拼出什么
           </Link>
-          <p className="text-warm-light/60 text-sm mb-8">
-            选择你的职业，2分钟完成入门
-          </p>
           <p className="text-warm-light/40 text-sm">
-            © 2026 拼图融合引擎 | 你的拼图片，值得被拼起来
+            © 2026 拼拼看Me | 把你做过的事，拼成你的下一步
           </p>
         </div>
       </section>
     </main>
   );
 }
+import { authFetch  } from '@/lib/api';

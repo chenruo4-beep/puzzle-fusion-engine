@@ -266,9 +266,8 @@ export default function ConfirmFragmentsContent() {
       </div>
 
       <div className="px-6 pb-4 text-center">
-        <h1 className="text-2xl font-bold text-warm-dark mb-1">步骤 2/3</h1>
-        <p className="text-warm-dark/60">{profession.icon} {profession.name} — 确认你的碎片</p>
-        <p className="text-xs text-warm-dark/30 mt-1">共 {templateFragments.length} 个预置碎片，点击选择</p>
+        <h1 className="text-2xl font-bold text-warm-dark mb-1">这段时间，Me又认识了你一点。</h1>
+        <p className="text-warm-dark/60">{profession.icon} {profession.name}，看看这些碎片哪些是你的。</p>
       </div>
 
       <div className="flex-1 px-6 pb-40 overflow-y-auto">
@@ -338,13 +337,13 @@ export default function ConfirmFragmentsContent() {
         <div className="max-w-2xl mx-auto space-y-3">
           <div className="flex items-center justify-between text-sm">
             <button onClick={toggleAll} className="text-warm-accent hover:text-warm-accent/80 font-medium transition-colors">
-              {allTemplateSelected ? '取消全选' : '全选'}
+              {allTemplateSelected ? '调整一下' : '都收下'}
             </button>
-            <span className="text-warm-dark/60">已选择 {totalSelected} 个碎片（预置 {selectedTemplateIndices.size} + 自定义 {customFragments.length}）</span>
+            <span className="text-warm-dark/60">已选择 {totalSelected} 个碎片</span>
           </div>
           <button onClick={handleStart} disabled={!canProceed}
             className={`w-full py-4 font-bold text-lg rounded-2xl shadow-lg transition-all duration-300 ${canProceed ? 'bg-warm-accent text-white hover:shadow-xl hover:bg-warm-accent/90 hover:-translate-y-0.5' : 'bg-warm-dark/20 text-warm-dark/40 cursor-not-allowed'}`}>
-            {canProceed ? '开始融合 →' : `至少选择 3 个碎片（当前 ${totalSelected} 个）`}
+            {canProceed ? '好，带着这些继续 →' : `至少选 3 个碎片才够拼（当前 ${totalSelected} 个）`}
           </button>
           <button
             onClick={() => router.push('/dashboard')}

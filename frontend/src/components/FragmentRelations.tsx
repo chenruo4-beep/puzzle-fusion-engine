@@ -1,8 +1,7 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 
-const API_BASE = 'http://localhost:8000';
 
 interface RelationItem {
   id: number;
@@ -47,7 +46,7 @@ export default function FragmentRelations({ fragmentId, compact = false }: Fragm
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/fragments/${fragmentId}/relations`);
+      const res = await authFetch(`/api/fragments/${fragmentId}/relations`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const result: RelationData = await res.json();
       setData(result);
@@ -159,3 +158,4 @@ export default function FragmentRelations({ fragmentId, compact = false }: Fragm
     </div>
   );
 }
+import { authFetch  } from '@/lib/api';

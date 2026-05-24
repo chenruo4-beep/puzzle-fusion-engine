@@ -1,8 +1,17 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useMemo, memo } from 'react';
 import Link from 'next/link';
 import CompletionRing from '@/components/CompletionRing';
+import ReverseConfirmationCard from '@/components/ReverseConfirmationCard';
+import AbilitySpectrum from '@/components/AbilitySpectrum';
+import WeeklyInsightCard from '@/components/WeeklyInsightCard';
+import DailyObservationNote from '@/components/DailyObservationNote';
+import TodaySuggestion from '@/components/TodaySuggestion';
+import MicroHabitSeed from '@/components/MicroHabitSeed';
+import LetGoRitual from '@/components/LetGoRitual';
+import DeepQuestionCard from '@/components/DeepQuestionCard';
+import UserProfileCard from '@/components/UserProfileCard';
 
 /* ---------- 类型 ---------- */
 interface Fragment {
@@ -36,7 +45,6 @@ interface JournalEntry {
 }
 
 /* ---------- 常量 ---------- */
-const API_BASE = 'http://localhost:8000';
 
 const QUOTES = [
   '每天进步一点点，碎片也能拼出星辰 ✨',
@@ -114,21 +122,21 @@ export default function DashboardHome() {
     async function load() {
       try {
         const [fRes, fuRes, cRes, jRes, clRes, gapRes] = await Promise.all([
-          fetch(`${API_BASE}/api/fragments/`).catch(() => null),
-          fetch(`${API_BASE}/api/fusions/`).catch(() => null),
-          fetch(`${API_BASE}/api/checkins/`).catch(() => null),
-          fetch(`${API_BASE}/api/journal/`).catch(() => null),
-          fetch(`${API_BASE}/api/fragments/clusters`).catch(() => null),
-          fetch(`${API_BASE}/api/fragments/gaps`).catch(() => null),
+          authFetch('/api/fragments/').catch(() => null),
+          authFetch('/api/fusions/').catch(() => null),
+          authFetch('/api/checkins/').catch(() => null),
+          authFetch('/api/journal/').catch(() => null),
+          authFetch('/api/fragments/clusters').catch(() => null),
+          authFetch('/api/fragments/gaps').catch(() => null),
         ]);
-        const fData = fRes ? await fRes.json() : [];
-        const fuData = fuRes ? await fuRes.json() : [];
-        const cData = cRes ? await cRes.json() : [];
-        const jData = jRes ? await jRes.json() : [];
-        setFragments(Array.isArray(fData) ? fData : []);
-        setFusions(Array.isArray(fuData) ? fuData : []);
-        setCheckins(Array.isArray(cData) ? cData : []);
-        setJournals(Array.isArray(jData) ? jData : []);
+        const fData = fRes ? await fRes.json() : {};
+        const fuData = fuRes ? await fuRes.json() : {};
+        const cData = cRes ? await cRes.json() : {};
+        const jData = jRes ? await jRes.json() : {};
+        setFragments(fData?.data?.items ?? (Array.isArray(fData) ? fData : []));
+        setFusions(fuData?.data?.items ?? (Array.isArray(fuData) ? fuData : []));
+        setCheckins(cData?.data?.items ?? (Array.isArray(cData) ? cData : []));
+        setJournals(jData?.data?.items ?? (Array.isArray(jData) ? jData : []));
         const clData = clRes ? await clRes.json() : { clusters: [] };
         setClusters(Array.isArray(clData.clusters) ? clData.clusters : []);
         const gData = gapRes ? await gapRes.json() : null;
@@ -144,15 +152,31 @@ export default function DashboardHome() {
 
   /* ---- 派生数据 ---- */
 
+  // 好久不见检测（超过24小时未访问）
+  const [isReturning, setIsReturning] = useState(false);
+  useEffect(() => {
+    try {
+      const last = localStorage.getItem('puzzle_last_visit');
+      const now = Date.now();
+      if (last && now - Number(last) > 24 * 60 * 60 * 1000) {
+        setIsReturning(true);
+      }
+      localStorage.setItem('puzzle_last_visit', String(now));
+    } catch {
+      // localStorage 不可用时不处理
+    }
+  }, []);
+
   // 问候语
   const now = new Date();
   const hours = now.getHours();
-  const greeting =
+  const baseGreeting =
     hours < 6 ? '凌晨好' :
     hours < 9 ? '早上好' :
     hours < 12 ? '上午好' :
     hours < 14 ? '中午好' :
     hours < 18 ? '下午好' : '晚上好';
+  const greeting = isReturning ? '好久不见' : baseGreeting;
 
   // 今日日期
   const todayStr = now.toLocaleDateString('zh-CN', {
@@ -235,6 +259,21 @@ export default function DashboardHome() {
         </p>
       </div>
 
+      {/* ====== 深度问题 ====== */}
+      <DeepQuestionCard />
+
+      {/* ====== 今日自我观察 ====== */}
+      <DailyObservationNote />
+
+      {/* ====== 今日使用建议 ====== */}
+      <TodaySuggestion />
+
+      {/* ====== 这可能也是你 ====== */}
+      <ReverseConfirmationCard />
+
+      {/* ====== 放下仪式 ====== */}
+      <LetGoRitual />
+
       {/* ====== 快捷入口 2×2 ====== */}
       <div className="grid grid-cols-2 gap-3">
         <Link
@@ -299,6 +338,18 @@ export default function DashboardHome() {
           </>
         )}
       </div>
+
+      {/* ====== 用户认知画像 ====== */}
+      <UserProfileCard />
+
+      {/* ====== 能力光谱 ====== */}
+      <AbilitySpectrum />
+
+      {/* ====== 本周自我新发现 ====== */}
+      <WeeklyInsightCard />
+
+      {/* ====== 微习惯孵化器 ====== */}
+      <MicroHabitSeed />
 
       {/* ====== 拼图片连接率圆环 ====== */}
       {!loading && (
@@ -573,3 +624,4 @@ function formatRelativeTime(isoStr: string): string {
   if (diffDay < 7) return `${diffDay}天前`;
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 }
+import { authFetch   } from '@/lib/api';

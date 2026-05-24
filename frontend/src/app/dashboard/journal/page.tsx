@@ -6,6 +6,7 @@ import { SkeletonCard } from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
+import { authFetch } from '@/lib/api';
 
 interface JournalEntry {
   id: number;
@@ -25,16 +26,6 @@ interface Template {
   prompts: string;
   created_at: string;
 }
-
-const API_BASE = 'http://localhost:8000';
-
-const SCAN_MESSAGES = [
-  '正在深度扫描你的日记...',
-  '识别潜在碎片模式...',
-  '提取关键洞察...',
-  '生成碎片建议...',
-  '即将完成...',
-];
 
 const TYPE_COLORS: Record<string, string> = {
   '技能': '#4a7c9b',
@@ -88,7 +79,6 @@ export default function JournalPage() {
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
   const [saving, setSaving] = useState(false);
-  const [analyzingIds, setAnalyzingIds] = useState<Set<number>>(new Set());
 
   // 模板写
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -112,7 +102,6 @@ export default function JournalPage() {
   const [showSuggestionsId, setShowSuggestionsId] = useState<number | null>(null);
   const [, setConfirmingIds] = useState<Set<number>>(new Set());
   const [confirmSaving, setConfirmSaving] = useState(false);
-  const [scanProgressIndex, setScanProgressIndex] = useState(0);
 
   // 逐个确认碎片
   const [currentConfirmIndex, setCurrentConfirmIndex] = useState(0);
@@ -126,9 +115,9 @@ export default function JournalPage() {
 
   async function loadEntries() {
     try {
-      const res = await fetch(`${API_BASE}/api/journal/`);
+      const res = await authFetch('/api/journal/?page=1&page_size=50');
       const data = await res.json();
-      setEntries(Array.isArray(data) ? data : []);
+      setEntries(data?.data?.items ?? (Array.isArray(data) ? data : []));
     } catch { /* silent */ } finally {
       setLoading(false);
     }
@@ -136,7 +125,7 @@ export default function JournalPage() {
 
   async function loadTemplates() {
     try {
-      const res = await fetch(`${API_BASE}/api/templates/`);
+      const res = await authFetch('/api/templates/');
       const data = await res.json();
       setTemplates(Array.isArray(data) && data.length > 0 ? data : FALLBACK_TEMPLATES);
     } catch {
@@ -155,10 +144,6 @@ export default function JournalPage() {
     return (Date.now() - new Date(iso).getTime()) < 24 * 60 * 60 * 1000;
   }
 
-  // function isRecent(iso: string): boolean {
-  //   return (Date.now() - new Date(iso).getTime()) < 5 * 60 * 1000;
-  // }
-
   function formatRemaining(iso: string): string {
     const remaining = 24 * 60 * 60 * 1000 - (Date.now() - new Date(iso).getTime());
     if (remaining <= 0) return '已过期';
@@ -172,94 +157,20 @@ export default function JournalPage() {
     return `${d.getMonth() + 1}月${d.getDate()}日 ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   }
 
-  // ── 轮询AI碎片自动提取结果 ──
-  const pollTimers = useRef<Map<number, ReturnType<typeof setInterval>>>(new Map());
-  const notifiedIds = useRef<Set<number>>(new Set());
-
-  function startPolling(entryId: number) {
-    let attempts = 0;
-    const maxAttempts = 20; // 20 × 2s = 40s max
-    const timer = setInterval(async () => {
-      attempts++;
-      try {
-        const res = await fetch(`${API_BASE}/api/journal/${entryId}`);
-        const entry = await res.json();
-        // 自动入库完成：检测到 extracted_fragment_ids 或 auto_extracted_count
-        const hasExtracted = entry.extracted_fragment_ids && JSON.parse(entry.extracted_fragment_ids).length > 0;
-        const autoCount = entry.auto_extracted_count || 0;
-        if (hasExtracted || autoCount > 0) {
-          clearInterval(timer);
-          pollTimers.current.delete(entryId);
-          setAnalyzingIds(prev => {
-            const next = new Set(prev);
-            next.delete(entryId);
-            return next;
-          });
-          await loadEntries();
-          // Toast 通知（只通知一次）
-          if (!notifiedIds.current.has(entryId)) {
-            notifiedIds.current.add(entryId);
-            const count = autoCount || (entry.extracted_fragment_ids ? JSON.parse(entry.extracted_fragment_ids).length : 0);
-            if (count > 0) {
-              toast(`🧩 AI 自动提取了 ${count} 个碎片`, 'success');
-            }
-          }
-          return;
-        }
-      } catch { /* retry */ }
-      if (attempts >= maxAttempts) {
-        clearInterval(timer);
-        pollTimers.current.delete(entryId);
-        setAnalyzingIds(prev => {
-          const next = new Set(prev);
-          next.delete(entryId);
-          return next;
-        });
-        await loadEntries();
-      }
-    }, 2000);
-    pollTimers.current.set(entryId, timer);
-  }
-
-  // 清理所有轮询定时器
-  useEffect(() => {
-    const timersRef = pollTimers.current;
-    return () => {
-      timersRef.forEach(timer => clearInterval(timer));
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // 扫描遮罩进度文案轮转
-  const showScanOverlay = analyzingIds.size > 0;
-  useEffect(() => {
-    if (!showScanOverlay) { setScanProgressIndex(0); return; }
-    const interval = setInterval(() => {
-      setScanProgressIndex(prev => (prev + 1) % SCAN_MESSAGES.length);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [showScanOverlay]);
-
   // ── 自由写保存 ──
   async function handleSave() {
     if (!content.trim()) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/journal/`, {
+      const res = await authFetch('/api/journal/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: content.trim(), tags: tags.trim() || null }),
       });
       if (res.ok) {
-        const newEntry = await res.json();
         setContent(''); setTags(''); setShowForm(false);
         setSaving(false);
         await loadEntries();
-        // 后台AI正在提取碎片，开始轮询
-        if (newEntry.id) {
-          setAnalyzingIds(prev => new Set(prev).add(newEntry.id));
-          startPolling(newEntry.id);
-        }
       }
     } catch { toast('保存失败', 'error'); } finally { setSaving(false); }
   }
@@ -270,19 +181,18 @@ export default function JournalPage() {
     setTemplateSaving(true);
     try {
       if (t.id > 0) {
-        await fetch(`${API_BASE}/api/templates/${t.id}/apply`, {
+        await authFetch(`/api/templates/${t.id}/apply`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: templateContent.trim() }),
         });
       }
-      const res = await fetch(`${API_BASE}/api/journal/`, {
+      const res = await authFetch('/api/journal/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: templateContent.trim(), tags: t.name }),
       });
       if (res.ok) {
-        const newEntry = await res.json();
         setTemplateSuccess(true);
         setTimeout(() => {
           setShowForm(false);
@@ -291,14 +201,6 @@ export default function JournalPage() {
           setTemplateSuccess(false);
           loadEntries();
         }, 1500);
-        // 后台AI正在提取碎片，开始轮询
-        if (newEntry.id) {
-          // 等模板成功动画结束后再标记 scanning，避免闪烁
-          setTimeout(() => {
-            setAnalyzingIds(prev => new Set(prev).add(newEntry.id));
-            startPolling(newEntry.id);
-          }, 1600);
-        }
       }
     } catch { toast('保存失败', 'error'); } finally { setTemplateSaving(false); }
   }
@@ -313,7 +215,7 @@ export default function JournalPage() {
     if (!editContent.trim()) return;
     setEditSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/journal/${entryId}`, {
+      const res = await authFetch(`/api/journal/${entryId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: editContent.trim(), tags: editTags.trim() || null }),
@@ -335,7 +237,7 @@ export default function JournalPage() {
   async function handleDelete(entryId: number) {
     setDeleteSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/journal/${entryId}`, {
+      const res = await authFetch(`/api/journal/${entryId}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -380,14 +282,13 @@ export default function JournalPage() {
   async function handleConfirmFragments(entry: JournalEntry) {
     const indices = getConfirmedIndices();
     if (indices.length === 0) {
-      // 全部跳过，直接 dismiss
       await handleDismissFragments(entry);
       return;
     }
 
     setConfirmSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/journal/${entry.id}/confirm-fragments`, {
+      const res = await authFetch(`/api/journal/${entry.id}/confirm-fragments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ indices }),
@@ -454,7 +355,7 @@ export default function JournalPage() {
 
   async function handleDismissFragments(entry: JournalEntry) {
     try {
-      await fetch(`${API_BASE}/api/journal/${entry.id}/dismiss-fragments`, { method: 'POST' });
+      await authFetch(`/api/journal/${entry.id}/dismiss-fragments`, { method: 'POST' });
       setShowSuggestionsId(null);
       setConfirmingIds(new Set());
       await loadEntries();
@@ -469,12 +370,12 @@ export default function JournalPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-warm-dark">
-            成长日志
+            随手记
             {!loading && entries.length > 0 && (
               <span className="ml-2 text-base font-normal text-warm-dark/40">{entries.length} 篇</span>
             )}
           </h1>
-          <p className="text-sm text-warm-dark/50 mt-1">每天记录一点，让时间看得见</p>
+          <p className="text-sm text-warm-dark/50 mt-1">不用组织语言，想到就写。</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -529,7 +430,7 @@ export default function JournalPage() {
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="今天发生了什么？学到了什么？有什么新想法…"
+                placeholder="比如：今天帮同事改了一个标题，我自己也不知道为什么能想到……"
                 className="w-full h-32 p-3 rounded-xl border border-warm-dark/10 bg-warm-light/50 text-sm text-warm-dark placeholder:text-warm-dark/30 resize-none focus:outline-none focus:border-warm-accent/40 transition-colors"
                 autoFocus
               />
@@ -545,7 +446,7 @@ export default function JournalPage() {
                   disabled={!content.trim() || saving}
                   className="px-5 py-2 bg-warm-accent text-white rounded-xl text-sm font-medium hover:bg-warm-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  {saving ? '保存中...' : '保存'}
+                  {saving ? '记下来...' : '记下来'}
                 </button>
               </div>
             </div>
@@ -581,7 +482,7 @@ export default function JournalPage() {
           {writeMode === 'template' && activeTemplate && templateSuccess && (
             <div className="flex flex-col items-center justify-center py-8">
               <span className="text-3xl mb-1">✅</span>
-              <span className="text-sm text-warm-accent font-medium">保存成功！</span>
+              <span className="text-sm text-warm-accent font-medium">记下来了</span>
             </div>
           )}
 
@@ -628,7 +529,7 @@ export default function JournalPage() {
                   disabled={!templateContent.trim() || templateSaving}
                   className="px-5 py-2 bg-warm-accent text-white rounded-xl text-sm font-medium hover:bg-warm-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  {templateSaving ? '保存中...' : '保存'}
+                  {templateSaving ? '记下来...' : '记下来'}
                 </button>
               </div>
             </div>
@@ -646,9 +547,9 @@ export default function JournalPage() {
       ) : entries.length === 0 ? (
         <EmptyState
           icon="📔"
-          title="空白也是一种开始"
-          description="空白页也有它的美。当你准备好的时候，写下今天的一小步。"
-          action={{ label: '✏️ 写今天的第一篇', onClick: () => openForm('free') }}
+          title="今天有什么事，让你觉得'这就是我'？"
+          description="或者'这绝对不是我'？不用组织语言。"
+          action={{ label: '试试看', onClick: () => openForm('free') }}
         />
       ) : (
         <div className="space-y-3">
@@ -837,8 +738,6 @@ export default function JournalPage() {
                           🧩 已提取 {JSON.parse(entry.extracted_fragment_ids).length || 0} 个碎片
                           {entry.auto_extracted_count > 0 && <span className="ml-1 text-emerald-500">(AI自动)</span>}
                         </Link>
-                      ) : analyzingIds.has(entry.id) ? (
-                        <span className="text-xs text-amber-500 animate-pulse">🧠 AI 正在扫描...</span>
                       ) : null}
                     </div>
                   </>
@@ -851,47 +750,7 @@ export default function JournalPage() {
 
       {!loading && entries.length > 0 && (
         <div className="rounded-2xl bg-gradient-to-r from-warm-accent/5 to-warm-accent/10 border border-warm-accent/10 p-4 text-center">
-          <p className="text-sm text-warm-dark/50">📝 24小时内可编辑，过时就成为成长的印记了</p>
-        </div>
-      )}
-
-      {/* AI 扫描遮罩层 */}
-      {showScanOverlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm transition-opacity duration-300">
-          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-[90%] text-center space-y-5">
-            {/* 扫描动画环 */}
-            <div className="relative w-20 h-20 mx-auto">
-              <div className="absolute inset-0 rounded-full border-4 border-warm-accent/10 animate-ping" />
-              <div className="absolute inset-0 rounded-full border-4 border-t-warm-accent border-warm-accent/10 animate-spin" />
-              <div className="absolute inset-3 rounded-full bg-warm-accent/10" />
-              <div className="absolute inset-[11px] rounded-full bg-warm-accent flex items-center justify-center">
-                <span className="text-white text-xl">🧠</span>
-              </div>
-            </div>
-            {/* 标题 */}
-            <h3 className="text-lg font-semibold text-warm-dark">AI 正在扫描...</h3>
-            {/* 文案轮转 */}
-            <p
-              key={scanProgressIndex}
-              className="text-sm text-warm-dark/60 min-h-[1.5em] animate-fade-in"
-              style={{
-                animation: 'fadeSlideIn 0.6s ease-out',
-              }}
-            >
-              {SCAN_MESSAGES[scanProgressIndex]}
-            </p>
-            {/* 进度圆点 */}
-            <div className="flex items-center justify-center gap-1.5">
-              {SCAN_MESSAGES.map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                    i === scanProgressIndex ? 'bg-warm-accent scale-125' : 'bg-warm-dark/15'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
+          <p className="text-sm text-warm-dark/50">📝 24小时内可以修改，过了这个时间，就是你的一部分了</p>
         </div>
       )}
 

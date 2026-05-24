@@ -1,8 +1,7 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 
-const API_BASE = 'http://localhost:8000';
 
 interface MapStep {
   id: number;
@@ -40,8 +39,8 @@ export default function JourneyMapText({ mapId }: JourneyMapTextProps) {
     setLoading(true);
     try {
       const [mapRes, stepsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/journey-maps/${mapId}`),
-        fetch(`${API_BASE}/api/journey-maps/${mapId}/steps`),
+        authFetch(`/api/journey-maps/${mapId}`),
+        authFetch(`/api/journey-maps/${mapId}/steps`),
       ]);
       if (!mapRes.ok || !stepsRes.ok) throw new Error('加载失败');
       const map = await mapRes.json();
@@ -122,3 +121,4 @@ export default function JourneyMapText({ mapId }: JourneyMapTextProps) {
     </div>
   );
 }
+import { authFetch  } from '@/lib/api';

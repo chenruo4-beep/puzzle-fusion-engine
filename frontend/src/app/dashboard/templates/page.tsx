@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Skeleton, SkeletonCard } from '@/components/Skeleton';
@@ -11,7 +11,6 @@ interface Template {
   created_at: string;
 }
 
-const API_BASE = 'http://localhost:8000';
 
 // ── Fallback templates when API returns empty ──
 const FALLBACK_TEMPLATES: Template[] = [
@@ -74,7 +73,7 @@ export default function TemplatesPage() {
 
   async function loadTemplates() {
     try {
-      const res = await fetch(`${API_BASE}/api/templates/`);
+      const res = await authFetch('/api/templates/');
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
         setTemplates(data);
@@ -120,7 +119,7 @@ export default function TemplatesPage() {
     try {
       // Phase 1: apply template (skip for fallback templates)
       if (t.id > 0) {
-        await fetch(`${API_BASE}/api/templates/${t.id}/apply`, {
+        await authFetch(`/api/templates/${t.id}/apply`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: content.trim() }),
@@ -128,7 +127,7 @@ export default function TemplatesPage() {
       }
 
       // Phase 2: persist as journal
-      const res = await fetch(`${API_BASE}/api/journal/`, {
+      const res = await authFetch('/api/journal/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -340,3 +339,4 @@ export default function TemplatesPage() {
     </div>
   );
 }
+import { authFetch  } from '@/lib/api';

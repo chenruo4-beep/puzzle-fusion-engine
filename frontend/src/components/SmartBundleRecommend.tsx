@@ -1,8 +1,7 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 
-const API_BASE = 'http://localhost:8000';
 
 interface BundleFragment {
   id: number;
@@ -50,7 +49,7 @@ export default function SmartBundleRecommend() {
   const fetchBundles = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/cooccurrence/`);
+      const res = await authFetch('/api/cooccurrence/');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: BundleResponse = await res.json();
       setData(json);
@@ -226,3 +225,4 @@ export default function SmartBundleRecommend() {
     </div>
   );
 }
+import { authFetch   } from '@/lib/api';

@@ -1,6 +1,7 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
+import { SkeletonHeader, SkeletonCard } from '@/components/Skeleton';
 
 /* ---------- 类型 ---------- */
 interface VersionStats {
@@ -17,7 +18,6 @@ interface ABStatsResponse {
 }
 
 /* ---------- 常量 ---------- */
-const API_BASE = 'http://localhost:8000';
 
 const VERSION_COLORS: Record<string, { bar: string; bg: string; text: string }> = {
   A: { bar: '#7a9b4a', bg: '#f7f9f2', text: '#4a6a2a' },
@@ -159,7 +159,7 @@ export default function ABDashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`${API_BASE}/api/analytics/stats`);
+        const res = await authFetch('/api/analytics/stats');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json: ABStatsResponse = await res.json();
         setData(json);
@@ -179,12 +179,12 @@ export default function ABDashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-56 bg-warm-dark/5 rounded" />
-          <div className="h-6 w-72 bg-warm-dark/5 rounded" />
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 bg-warm-dark/5 rounded-2xl" />
-          ))}
+        <SkeletonHeader />
+        <div className="space-y-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
       </div>
     );
@@ -406,7 +406,7 @@ export default function ABDashboardPage() {
             你可以在控制台运行以下命令模拟一条测试数据：
           </p>
           <div className="mt-3 inline-block bg-warm-dark/5 rounded-lg px-4 py-2 text-xs font-mono text-warm-dark/60 select-all">
-            {`curl -X POST ${API_BASE}/api/analytics/event \\\n  -H 'Content-Type: application/json' \\\n  -d '{"version":"A","event_type":"page_view","user_id":"test-1"}'`}
+            {`curl -X POST apiUrl('/api/analytics/event') \\\n  -H 'Content-Type: application/json' \\\n  -d '{"version":"A","event_type":"page_view","user_id":"test-1"}'`}
           </div>
         </div>
       )}
@@ -420,3 +420,4 @@ export default function ABDashboardPage() {
     </div>
   );
 }
+import { authFetch  } from '@/lib/api';

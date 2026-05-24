@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { SkeletonCard } from '@/components/Skeleton';
@@ -19,14 +19,13 @@ interface Checkin {
   created_at: string;
 }
 
-const API_BASE = 'http://localhost:8000';
 
 export default function CheckinPage() {
   const { toast } = useToast();
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 新建打卡
+  // 新建微任务
   const [title, setTitle] = useState('');
   const [action, setAction] = useState('');
   const [creating, setCreating] = useState(false);
@@ -36,6 +35,10 @@ export default function CheckinPage() {
   const [feedbackText, setFeedbackText] = useState('');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
+  const [microTaskOpenId, setMicroTaskOpenId] = useState<number | null>(null);
+  const [microTaskDoneAnimId, setMicroTaskDoneAnimId] = useState<number | null>(null);
+  const [diaryDraft, setDiaryDraft] = useState<{ checkinId: number; text: string } | null>(null);
+
   const feedbackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,7 +47,7 @@ export default function CheckinPage() {
 
   async function loadCheckins() {
     try {
-      const res = await fetch(`${API_BASE}/api/checkins/`);
+      const res = await authFetch('/api/checkins/');
       const data = await res.json();
       setCheckins(Array.isArray(data) ? data : []);
     } catch {
@@ -75,12 +78,12 @@ export default function CheckinPage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _streak = streakDisplay;
 
-  // ---------- 创建打卡 ----------
+  // ---------- 创建微任务 ----------
   async function handleCreate() {
     if (!title.trim()) return;
     setCreating(true);
     try {
-      const res = await fetch(`${API_BASE}/api/checkins/`, {
+      const res = await authFetch('/api/checkins/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,18 +103,75 @@ export default function CheckinPage() {
     }
   }
 
-  // ---------- 完成打卡 ----------
   async function handleComplete(id: number) {
     try {
-      const res = await fetch(`${API_BASE}/api/checkins/${id}/complete`, {
+      const res = await authFetch(`/api/checkins/${id}/complete`, {
         method: 'PATCH',
       });
       if (res.ok) {
         await loadCheckins();
+        const checkin = checkins.find((c) => c.id === id);
+        if (checkin) {
+          const diaryText = generateDiaryText(checkin);
+          setDiaryDraft({ checkinId: id, text: diaryText });
+        }
       }
     } catch {
       toast('操作失败，请稍后重试', 'error');
     }
+  }
+
+  function generateDiaryText(checkin: Checkin): string {
+    const t = checkin.title;
+    const a = checkin.action || '';
+    const qualities: Record<string, string> = {
+      '冥想': '专注与平静',
+      '运动': '坚持与活力',
+      '跑步': '坚持与耐力',
+      '阅读': '好奇心与求知欲',
+      '写作': '表达与创造力',
+      '学习': '成长与探索',
+      '早起': '自律',
+      '整理': '秩序感',
+    };
+    let quality = '行动力';
+    for (const [keyword, q] of Object.entries(qualities)) {
+      if (t.includes(keyword) || a.includes(keyword)) {
+        quality = q;
+        break;
+      }
+    }
+    let from = '犹豫';
+    let to = '行动';
+    if (t.includes('冥想') || a.includes('冥想')) { from = '分心'; to = '专注'; }
+    else if (t.includes('运动') || t.includes('跑步') || a.includes('运动')) { from = '静止'; to = '活力'; }
+    else if (t.includes('阅读') || a.includes('阅读')) { from = '空白'; to = '新知'; }
+    else if (t.includes('写作') || a.includes('写作')) { from = '空白'; to = '表达'; }
+    else if (t.includes('学习') || a.includes('学习')) { from = '未知'; to = '理解'; }
+    return `你完成了【${t}】，这证明了你拥有【${quality}】的能力。你在【${from}】到【${to}】的路上又前进了一步。`;
+  }
+
+  function saveDiary(draft: { checkinId: number; text: string }) {
+    const existing = JSON.parse(localStorage.getItem('achievement_diary') || '[]');
+    existing.push({ id: Date.now(), checkinId: draft.checkinId, text: draft.text, savedAt: new Date().toISOString() });
+    localStorage.setItem('achievement_diary', JSON.stringify(existing));
+    setDiaryDraft(null);
+    toast('已存入成就日记', 'success');
+  }
+
+  function dismissDiary() {
+    setDiaryDraft(null);
+  }
+
+  function handleMicroTaskDone(checkinId: number) {
+    setMicroTaskOpenId(null);
+    setMicroTaskDoneAnimId(checkinId);
+    const checkin = checkins.find((c) => c.id === checkinId);
+    if (checkin) {
+      const diaryText = generateDiaryText(checkin);
+      setDiaryDraft({ checkinId, text: diaryText });
+    }
+    setTimeout(() => setMicroTaskDoneAnimId(null), 2500);
   }
 
   // ---------- 反馈 ----------
@@ -127,7 +187,7 @@ export default function CheckinPage() {
     if (!feedbackText.trim()) return;
     setSubmittingFeedback(true);
     try {
-      const res = await fetch(`${API_BASE}/api/checkins/${id}/feedback`, {
+      const res = await authFetch(`/api/checkins/${id}/feedback`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ feedback: feedbackText.trim() }),
@@ -156,15 +216,21 @@ export default function CheckinPage() {
 
   useKeyboardShortcut({ onCtrlEnter: handleCreate });
 
+  const microTaskOptions = [
+    { label: '我准备好了工具/环境', key: 'env' },
+    { label: '我确定了要做什么', key: 'plan' },
+    { label: '我跟一个人说了我要做这件事', key: 'share' },
+  ];
+
   return (
     <div className="space-y-6">
       {/* 标题区 */}
       <div>
-        <h1 className="text-2xl font-bold text-warm-dark">每日打卡</h1>
-        <p className="text-sm text-warm-dark/50 mt-1">持续小行动，累积大改变</p>
+        <h1 className="text-2xl font-bold text-warm-dark">动了一下</h1>
+        <p className="text-sm text-warm-dark/50 mt-1">不用完成什么大事。做了一个小动作，就够了。</p>
       </div>
 
-      {/* 连续打卡徽章 */}
+      {/* 连续行动徽章 */}
       <StreakBadge />
 
       {/* 统计区 */}
@@ -172,35 +238,35 @@ export default function CheckinPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-4 text-center">
             <div className="text-2xl font-bold text-warm-dark">{total}</div>
-            <div className="text-xs text-warm-dark/40 mt-1">总打卡</div>
+            <div className="text-xs text-warm-dark/40 mt-1">迈出过</div>
           </div>
           <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-4 text-center">
             <div className="text-2xl font-bold" style={{color: '#059669'}}>{completed}</div>
-            <div className="text-xs text-warm-dark/40 mt-1">已完成</div>
+            <div className="text-xs text-warm-dark/40 mt-1">做完了</div>
           </div>
           <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-4 text-center">
             <div className="text-2xl font-bold text-warm-accent">{rate}%</div>
-            <div className="text-xs text-warm-dark/40 mt-1">完成率</div>
+            <div className="text-xs text-warm-dark/40 mt-1">动起来</div>
           </div>
         </div>
       )}
 
-      {/* 新建打卡 */}
+      {/* 新建微任务 */}
       <div className="rounded-2xl bg-white/80 border border-warm-dark/10 p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-warm-dark/60">新建打卡</h2>
+        <h2 className="text-sm font-semibold text-warm-dark/60">今天做点什么</h2>
         <div className="flex gap-3">
           <div className="flex-1 space-y-3">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="打卡标题，如：冥想10分钟"
+              placeholder="想做的小事，比如：站起来走一圈"
               className="w-full px-4 py-2.5 rounded-xl border border-warm-dark/10 bg-warm-light/50 text-sm text-warm-dark placeholder:text-warm-dark/30 focus:outline-none focus:border-warm-accent/40 transition-colors"
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
             <input
               value={action}
               onChange={(e) => setAction(e.target.value)}
-              placeholder="行动描述（可选），如：找一个安静的地方，闭上眼睛"
+              placeholder="怎么做（可选），比如：推开椅子，站起来"
               className="w-full px-4 py-2.5 rounded-xl border border-warm-dark/10 bg-warm-light/50 text-sm text-warm-dark placeholder:text-warm-dark/30 focus:outline-none focus:border-warm-accent/40 transition-colors"
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
@@ -210,12 +276,12 @@ export default function CheckinPage() {
             disabled={!title.trim() || creating}
             className="self-end px-5 py-2.5 bg-warm-accent text-white rounded-xl text-sm font-medium hover:bg-warm-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
-            {creating ? '创建中...' : '创建'}
+            {creating ? '记下来...' : '记下来'}
           </button>
         </div>
       </div>
 
-      {/* 打卡列表 */}
+      {/* 微任务列表 */}
       {loading ? (
         <div className="space-y-3">
           <SkeletonCard />
@@ -225,14 +291,17 @@ export default function CheckinPage() {
       ) : checkins.length === 0 ? (
         <EmptyState
           icon="📋"
-          title="还没有打卡记录"
-          description="不需要完美的第一天，只需要真实的第一步。从这里开始你的第一个打卡吧。"
-          action={{ label: '创建第一个打卡', onClick: () => { const el = document.querySelector('input[placeholder*="打卡标题"]') as HTMLInputElement; if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth' }); } } }}
+          title="还没有开始。"
+          description="不急，Me等你。"
+          action={{ label: '试试看', onClick: () => { const el = document.querySelector('input[placeholder*="想做的小事"]') as HTMLInputElement; if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth' }); } } }}
         />
       ) : (
         <div className="space-y-3">
           {checkins.map((checkin) => {
             const isFeedbackOpen = feedbackId === checkin.id;
+            const isMicroTaskOpen = microTaskOpenId === checkin.id;
+            const isMicroTaskDone = microTaskDoneAnimId === checkin.id;
+            const isDiaryDraft = diaryDraft?.checkinId === checkin.id;
 
             return (
               <div
@@ -252,7 +321,7 @@ export default function CheckinPage() {
                         : 'bg-amber-50 text-amber-600'
                     }`}
                   >
-                    {checkin.status === 'completed' ? '🟢 已完成' : '🟡 进行中'}
+                    {checkin.status === 'completed' ? '🟢 做完了' : '🟡 还没做'}
                   </span>
                   <span className="text-xs text-warm-dark/40">
                     {formatDate(checkin.created_at)}
@@ -275,20 +344,59 @@ export default function CheckinPage() {
                 {/* 已提交的反馈 */}
                 {checkin.feedback && (
                   <div className="mt-2 p-3 rounded-xl bg-warm-accent/5 border border-warm-accent/10">
-                    <p className="text-xs text-warm-dark/40 mb-1">💬 反馈</p>
+                    <p className="text-xs text-warm-dark/40 mb-1">💬 感受</p>
                     <p className="text-sm text-warm-dark/70">{checkin.feedback}</p>
+                  </div>
+                )}
+
+                {isMicroTaskDone && (
+                  <div className="mt-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-center animate-pulse">
+                    <p className="text-sm font-medium text-amber-700">第一步，迈出去了。</p>
+                  </div>
+                )}
+
+                {isDiaryDraft && diaryDraft && (
+                  <div className="mt-3 p-4 rounded-xl bg-warm-accent/5 border border-warm-accent/20 space-y-3">
+                    <p className="text-xs text-warm-dark/40">成就日记</p>
+                    <p className="text-sm text-warm-dark/70 leading-relaxed">{diaryDraft.text}</p>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={dismissDiary}
+                        className="px-3 py-1.5 text-xs text-warm-dark/50 hover:bg-warm-dark/5 rounded-lg transition-colors"
+                      >
+                        不用了
+                      </button>
+                      <button
+                        onClick={() => saveDiary(diaryDraft)}
+                        className="px-4 py-1.5 bg-warm-accent text-white rounded-lg text-xs font-medium hover:bg-warm-accent/90 transition-colors"
+                      >
+                        存下来
+                      </button>
+                    </div>
                   </div>
                 )}
 
                 {/* 操作按钮 */}
                 <div className="flex items-center gap-3 mt-3 pt-3 border-t border-warm-dark/5">
                   {checkin.status === 'pending' ? (
-                    <button
-                      onClick={() => handleComplete(checkin.id)}
-                      className="px-4 py-1.5 bg-warm-accent text-white rounded-lg text-xs font-medium hover:bg-warm-accent/90 transition-colors"
-                    >
-                      ✅ 完成打卡
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleComplete(checkin.id)}
+                        className="px-4 py-1.5 bg-warm-accent text-white rounded-lg text-xs font-medium hover:bg-warm-accent/90 transition-colors"
+                      >
+                        ✅ 动一下
+                      </button>
+                      <button
+                        onClick={() => setMicroTaskOpenId(isMicroTaskOpen ? null : checkin.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          isMicroTaskOpen
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-warm-accent/10 text-warm-accent hover:bg-warm-accent/20'
+                        }`}
+                      >
+                        迈出第一步
+                      </button>
+                    </>
                   ) : (
                     !checkin.feedback && (
                       <button
@@ -299,11 +407,28 @@ export default function CheckinPage() {
                             : 'bg-warm-accent/10 text-warm-accent hover:bg-warm-accent/20'
                         }`}
                       >
-                        {isFeedbackOpen ? '收起' : '💬 写反馈'}
+                        {isFeedbackOpen ? '收起' : '💬 说说感受'}
                       </button>
                     )
                   )}
                 </div>
+
+                {isMicroTaskOpen && checkin.status === 'pending' && (
+                  <div className="mt-3 p-3 rounded-xl bg-amber-50/50 border border-amber-200/50 space-y-2">
+                    <p className="text-xs text-amber-700 font-medium">选一个你已经做过的微小动作：</p>
+                    <div className="flex flex-wrap gap-2">
+                      {microTaskOptions.map((opt) => (
+                        <button
+                          key={opt.key}
+                          onClick={() => handleMicroTaskDone(checkin.id)}
+                          className="px-3 py-1.5 rounded-lg text-xs bg-white border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors"
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* 反馈输入框 */}
                 {isFeedbackOpen && checkin.status === 'completed' && !checkin.feedback && (
@@ -311,7 +436,7 @@ export default function CheckinPage() {
                     <textarea
                       value={feedbackText}
                       onChange={(e) => setFeedbackText(e.target.value)}
-                      placeholder="写下完成后的感受..."
+                      placeholder="做完之后，有什么感觉？"
                       className="w-full h-20 p-3 rounded-xl border border-warm-dark/10 bg-warm-light/50 text-sm text-warm-dark placeholder:text-warm-dark/30 resize-none focus:outline-none focus:border-warm-accent/40 transition-colors"
                       autoFocus
                     />
@@ -327,7 +452,7 @@ export default function CheckinPage() {
                         disabled={!feedbackText.trim() || submittingFeedback}
                         className="px-4 py-1.5 bg-warm-accent text-white rounded-lg text-xs font-medium hover:bg-warm-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
-                        {submittingFeedback ? '提交中...' : '提交反馈'}
+                        {submittingFeedback ? '发送中...' : '说说看'}
                       </button>
                     </div>
                   </div>
@@ -340,3 +465,4 @@ export default function CheckinPage() {
     </div>
   );
 }
+import { authFetch   } from '@/lib/api';

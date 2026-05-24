@@ -1,7 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import CapabilitySpectrum from '@/components/CapabilitySpectrum';
 
 interface FusionData {
   profession: string;
@@ -25,11 +26,15 @@ interface FusionDirection {
   roadmap?: RoadmapStep[];
   used_fragments: string[];
   next_action: string;
+  common_pitfalls?: string[];
 }
 
 interface FusionResult {
   golden_sentence: string;
   profile_tag?: string;
+  capability_tags?: string[];
+  capability_signature?: string;
+  user_domains?: string[];
   confidence?: number;
   directions: FusionDirection[];
   insight: string;
@@ -49,7 +54,6 @@ const DIFFICULTY_CONFIG = {
   hard: { label: '有挑战', color: 'bg-rose-100 text-rose-700', dot: 'bg-rose-400' },
 };
 
-const API_BASE = 'http://localhost:8000';
 
 type PageState = 'loading' | 'fusing' | 'result' | 'error';
 
@@ -96,7 +100,7 @@ export default function WelcomePage() {
     }, 800);
 
     try {
-      const response = await fetch(`${API_BASE}/api/fusions/analyze`, {
+      const response = await authFetch('/api/fusions/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -152,7 +156,7 @@ export default function WelcomePage() {
   const saveFragmentsToDb = async (fusionData: FusionData) => {
     try {
       for (const frag of fusionData.fragments) {
-        await fetch(`${API_BASE}/api/fragments/`, {
+        await authFetch('/api/fragments/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -170,7 +174,7 @@ export default function WelcomePage() {
     if (!result) return;
     try {
       const title = result.directions[0]?.title || '首次融合';
-      await fetch(`${API_BASE}/api/fusions/save`, {
+      await authFetch('/api/fusions/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -188,9 +192,9 @@ export default function WelcomePage() {
 
   const handleCopy = () => {
     if (!result) return;
-    const text = `🔮 拼图融合报告\n\n${result.golden_sentence}\n\n${result.directions.map((d, i) =>
-      `${i + 1}. ${d.title}\n${d.why_this_works || d.description || ''}\n📌 下一步：${d.next_action}`
-    ).join('\n\n')}\n\n💡 洞察：${result.insight}`;
+    const text = `🔮 拼拼看Me\n\n${result.golden_sentence}\n\n${result.directions.map((d, i) =>
+      `${i + 1}. ${d.title}\n${d.why_this_works || d.description || ''}\n📌 可以试试看：${d.next_action}`
+    ).join('\n\n')}\n\n💡 ${result.insight}`;
     navigator.clipboard.writeText(text);
   };
 
@@ -200,11 +204,11 @@ export default function WelcomePage() {
       <div className="min-h-screen bg-warm-bg">
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4">
-            <h3 className="text-lg font-bold text-warm-dark">📌 使用前请了解</h3>
+            <h3 className="text-lg font-bold text-warm-dark">📌 先说好</h3>
             <div className="space-y-2 text-sm text-warm-dark/70 leading-relaxed">
-              <p>拼图融合引擎的分析结果仅供灵感参考，不构成任何投资、商业或职业指导。</p>
-              <p>AI 基于你提供的信息生成建议，可能存在偏差或遗漏。请结合自身实际情况，独立判断风险。</p>
-              <p>执行任何建议前，请自行验证可行性，谨慎决策。</p>
+              <p>这些拼图组合只是AI的灵感碰撞，不是投资建议，也不是职业规划。</p>
+              <p>AI 看到的只是你告诉它的话，它也会有盲区和偏差。做决定之前，问问你自己的直觉。</p>
+              <p>想清楚了再行动，不用急。</p>
             </div>
             <button
               onClick={() => {
@@ -213,7 +217,7 @@ export default function WelcomePage() {
               }}
               className="w-full py-2.5 bg-warm-accent text-white rounded-xl text-sm font-medium hover:bg-warm-accent/90 transition-colors"
             >
-              我已了解，继续查看
+              好的，看看它说了什么
             </button>
           </div>
         </div>
@@ -251,18 +255,18 @@ export default function WelcomePage() {
           <div className="text-center space-y-6 max-w-sm">
             <div className="text-6xl animate-bounce">🧩</div>
             <div>
-              <h2 className="text-xl font-bold text-warm-dark mb-1">正在融合你的碎片</h2>
+              <h2 className="text-xl font-bold text-warm-dark mb-1">正在拼你的碎片...</h2>
               <p className="text-sm text-warm-dark/50">{data.professionIcon} {data.profession} · {data.fragments.length} 个碎片</p>
             </div>
 
             <div className="space-y-2">
               <h3 className="text-lg font-bold text-warm-dark">
-                {loadingStep <= 1 && '🔍 正在识别你的能力类型...'}
-                {loadingStep === 2 && '🧠 正在用8刃切割法分析...'}
-                {loadingStep === 3 && '💡 正在寻找最有力的组合方向...'}
-                {loadingStep === 4 && '🔗 正在验证碎片间的连接...'}
-                {loadingStep >= 5 && loadingStep < 8 && '📋 正在生成你的行动方案...'}
-                {loadingStep >= 8 && '✨ 马上就好...'}
+                {loadingStep <= 1 && '🔍 正在认识你的碎片...'}
+                {loadingStep === 2 && '🧠 不同片段的连接点在哪里...'}
+                {loadingStep === 3 && '💡 有意思，有几个方向冒出来了...'}
+                {loadingStep === 4 && '🔗 再对一对，看看有没有漏掉的...'}
+                {loadingStep >= 5 && loadingStep < 8 && '📋 试着串成一条路...'}
+                {loadingStep >= 8 && '✨ 快了...'}
               </h3>
               <div className="w-64 h-2.5 bg-warm-dark/10 rounded-full mx-auto overflow-hidden relative">
                 <div className="h-full bg-warm-accent rounded-full transition-all duration-700 ease-out"
@@ -272,7 +276,7 @@ export default function WelcomePage() {
                 </span>
               </div>
               <p className="text-xs text-warm-dark/30">
-                {loadingStep <= 2 ? '第一步：把碎片分类到8个维度' : loadingStep <= 4 ? '第二步：找到你的组合技' : loadingStep <= 6 ? '第三步：生成行动方案' : '最后一步：润色输出'}
+                {loadingStep <= 2 ? '第一步：看看你的碎片都在讲什么' : loadingStep <= 4 ? '第二步：找找它们之间的缘分' : loadingStep <= 6 ? '第三步：理一理可以试试的方向' : '最后一步：好了'}
               </p>
             </div>
           </div>
@@ -292,7 +296,7 @@ export default function WelcomePage() {
         <div className="flex-1 flex flex-col items-center justify-center px-6">
           <div className="text-center space-y-4 max-w-sm">
             <div className="text-5xl">😅</div>
-            <h2 className="text-xl font-bold text-warm-dark">融合出了点问题</h2>
+            <h2 className="text-xl font-bold text-warm-dark">咦，拼图卡住了</h2>
             <p className="text-sm text-red-500">{errorMsg}</p>
             <div className="space-y-3 pt-2">
               <button
@@ -332,8 +336,8 @@ export default function WelcomePage() {
       {/* 顶部 */}
       <div className="px-6 pb-4 text-center">
         <div className="text-4xl mb-2">🎉</div>
-        <h1 className="text-xl font-bold text-warm-dark">🎉 你的融合结果来了！</h1>
-        <p className="text-xs text-warm-dark/40">{data.professionIcon} {data.profession} · {data.fragments.length} 个碎片融合</p>
+        <h1 className="text-xl font-bold text-warm-dark">Hi，拼拼看Me。</h1>
+        <p className="text-xs text-warm-dark/40">{data.professionIcon} {data.profession} · {data.fragments.length} 个碎片拼在一起</p>
       </div>
 
       {/* 结果内容 */}
@@ -363,7 +367,7 @@ export default function WelcomePage() {
 
               {/* 融合方向 */}
               <div className="space-y-3">
-                <h2 className="text-sm font-medium text-warm-dark/50">🎯 融合方向</h2>
+                <h2 className="text-sm font-medium text-warm-dark/50">🧩 拼出来的样子</h2>
                 {result.directions.map((dir, i) => {
                   const diff = DIFFICULTY_CONFIG[dir.difficulty || 'medium'];
                   const isOpen = expandedDir === i;
@@ -395,7 +399,7 @@ export default function WelcomePage() {
                         <div className="px-4 pb-4 space-y-3 border-t border-warm-dark/5 pt-3">
                           {(dir.why_this_works || dir.description) && (
                             <div>
-                              <h4 className="text-xs font-medium text-warm-dark/40 mb-1">为什么这个组合能打</h4>
+                              <h4 className="text-xs font-medium text-warm-dark/40 mb-1">这个方向有意思在哪</h4>
                               <p className="text-sm text-warm-dark/80 leading-relaxed">
                                 {dir.why_this_works || dir.description}
                               </p>
@@ -407,9 +411,22 @@ export default function WelcomePage() {
                               <p className="text-sm text-warm-dark/70">{dir.market_hint}</p>
                             </div>
                           )}
+                          {dir.common_pitfalls && dir.common_pitfalls.length > 0 && (
+                            <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/50">
+                              <h4 className="text-xs font-medium text-amber-700 mb-1.5">⚠️ 新手最常栽的坑</h4>
+                              <ul className="space-y-1">
+                                {dir.common_pitfalls.map((pitfall, pi) => (
+                                  <li key={pi} className="text-xs text-amber-700/80 flex items-start gap-1.5">
+                                    <span>•</span>
+                                    <span>{pitfall}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                           {dir.roadmap && dir.roadmap.length > 0 && (
                             <div>
-                              <h4 className="text-xs font-medium text-warm-dark/40 mb-2">执行路线图</h4>
+                              <h4 className="text-xs font-medium text-warm-dark/40 mb-2">可以试试的步骤</h4>
                               <div className="space-y-2">
                                 {dir.roadmap.map((s, si) => (
                                   <div key={si} className="flex gap-3">
@@ -438,7 +455,7 @@ export default function WelcomePage() {
                             ))}
                           </div>
                           <div className="p-3 rounded-lg bg-warm-accent/5 border border-warm-accent/10">
-                            <span className="text-xs text-warm-accent font-medium">📌 本周第一步：</span>
+                            <span className="text-xs text-warm-accent font-medium">📌 先做这一件小事：</span>
                             <p className="text-sm text-warm-dark mt-0.5">{dir.next_action}</p>
                           </div>
                         </div>
@@ -447,6 +464,26 @@ export default function WelcomePage() {
                   );
                 })}
               </div>
+
+              {/* 能力光谱（Engine 0.1） */}
+              <CapabilitySpectrum
+                activeTags={result.capability_tags}
+                signature={result.capability_signature}
+              />
+
+              {/* 用户领域（Engine 0.1） */}
+              {result.user_domains && result.user_domains.length > 0 && (
+                <div className="p-4 rounded-2xl bg-white/60 border border-warm-dark/10">
+                  <h3 className="text-xs font-medium text-warm-dark/40 mb-2">📍 感知到你的领域</h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {result.user_domains.map((domain, i) => (
+                      <span key={i} className="px-2.5 py-1 bg-warm-accent/8 text-warm-accent/80 text-xs rounded-full border border-warm-accent/15">
+                        {domain}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* 整体洞察 */}
               <div className="p-4 rounded-2xl bg-warm-light/60 border border-warm-dark/5">
@@ -457,7 +494,7 @@ export default function WelcomePage() {
               {/* 能力缺口 */}
               {result.skill_gaps && result.skill_gaps.length > 0 && (
                 <div className="p-4 rounded-2xl bg-white/60 border border-warm-dark/10">
-                  <h3 className="text-sm font-medium text-warm-dark/50 mb-2">🔧 你离更强还差这些拼图</h3>
+                  <h3 className="text-sm font-medium text-warm-dark/50 mb-2">🔧 还有这些拼图没放进来</h3>
                   <div className="space-y-1.5">
                     {result.skill_gaps.map((gap, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm text-warm-dark/70">
@@ -507,7 +544,7 @@ export default function WelcomePage() {
               {/* 免责声明 */}
               <div className="rounded-xl bg-warm-dark/3 border border-warm-dark/5 p-3 text-center">
                 <p className="text-xs text-warm-dark/30 leading-relaxed">
-                  ⚠️ 以上内容仅为 AI 生成的灵感建议，不构成投资或商业指导。
+                  ⚠️ 以上内容仅为 AI 的灵感碰撞，不构成投资或商业指导。
                 </p>
               </div>
             </>
@@ -520,8 +557,8 @@ export default function WelcomePage() {
         <div className="max-w-lg mx-auto flex items-center gap-3">
           <span className="text-xl">💡</span>
           <div className="flex-1">
-            <p className="text-sm font-medium text-amber-800">养成习惯：每天写日记，AI 会自动帮你提取碎片</p>
-            <p className="text-xs text-amber-600/70">碎片越多，融合结果越精准</p>
+            <p className="text-sm font-medium text-amber-800">随手记点什么，AI 会帮你捡起碎片</p>
+            <p className="text-xs text-amber-600/70">碎片多了，拼图才越来越像你</p>
           </div>
         </div>
       </div>
@@ -530,7 +567,15 @@ export default function WelcomePage() {
       <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-warm-bg via-warm-bg/95 to-transparent">
         <div className="max-w-lg mx-auto space-y-2">
           <button
-            onClick={() => {
+            onClick={async () => {
+              // 标记 onboarding 完成，获取新 token
+              try {
+                const res = await authFetch('/api/auth/complete-onboarding', { method: 'POST' });
+                const data = await res.json();
+                if (data.access_token) setToken(data.access_token);
+              } catch {
+                // 静默失败，不影响跳转
+              }
               localStorage.setItem('firstFusionComplete', 'true');
               localStorage.removeItem('fusionData');
               router.push('/dashboard');
@@ -543,7 +588,7 @@ export default function WelcomePage() {
             onClick={() => router.push('/dashboard/diary')}
             className="w-full py-3 bg-white text-warm-accent font-medium text-sm rounded-2xl border-2 border-warm-accent/20 hover:bg-warm-accent/5 transition-colors"
           >
-            📝 先写篇日记养碎片 →
+            📝 记一笔，攒个碎片 →
           </button>
           <button
             onClick={() => router.push('/dashboard/fusion')}
@@ -556,3 +601,4 @@ export default function WelcomePage() {
     </div>
   );
 }
+import { authFetch, setToken  } from '@/lib/api';

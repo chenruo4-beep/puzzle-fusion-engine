@@ -13,6 +13,18 @@ const professions = [
   { id: 'shopkeeper', icon: '🏪', name: '小店主', desc: '懂进货、会算账、人缘好', count: 16 },
   { id: 'worker', icon: '🔧', name: '工厂工人', desc: '体力好、守纪律、能协作', count: 17 },
   { id: 'student', icon: '📚', name: '学生', desc: '学习力强、有好奇心、关注未来', count: 17 },
+  { id: 'nurse', icon: '🏥', name: '医护/护理', desc: '细心、会照顾人、抗压', count: 16 },
+  { id: 'admin', icon: '📋', name: '行政/文员', desc: '有条理、办公软件熟、细心', count: 16 },
+  { id: 'accountant', icon: '💰', name: '会计/财务', desc: '数字敏感、严谨、懂法规', count: 15 },
+  { id: 'operator', icon: '📱', name: '新媒体运营', desc: '写内容、看数据、懂流量', count: 16 },
+  { id: 'driver', icon: '🚚', name: '物流/司机', desc: '路线熟、守时、能吃苦', count: 16 },
+  { id: 'chef', icon: '🍳', name: '餐饮/厨师', desc: '厨艺好、效率高、懂服务', count: 16 },
+  { id: 'agent', icon: '🏠', name: '房产/中介', desc: '会谈判、懂市场、有人脉', count: 15 },
+  { id: 'designer', icon: '🎨', name: '设计师/美工', desc: '审美、会用工具、有创意', count: 16 },
+  { id: 'fitness', icon: '💪', name: '健身/运动', desc: '体能好、会教人、自律', count: 15 },
+  { id: 'photographer', icon: '📸', name: '摄影师', desc: '构图好、会拍、能后期', count: 16 },
+  { id: 'cs', icon: '🎧', name: '客服/售后', desc: '有耐心、会沟通、抗压', count: 15 },
+  { id: 'hr', icon: '👥', name: '人力资源', desc: '识人、会沟通、懂制度', count: 15 },
 ];
 
 export default function ProfessionPage() {

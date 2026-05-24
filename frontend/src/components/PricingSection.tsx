@@ -19,14 +19,15 @@ export default function PricingSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
           <div className="bg-warm-light/80 rounded-2xl p-6 shadow-sm">
             <h3 className="text-xl font-bold text-warm-dark mb-6">免费版</h3>
+            <p className="text-sm text-warm-dark/50 mb-6">试一试，不需要决定什么。</p>
             <ul className="space-y-3 text-warm-dark/70 mb-6">
               <li className="flex items-center gap-2">
                 <span className="text-warm-success">✓</span>
-                <span>50块拼图片</span>
+                <span>50块碎片 — 够拼出一两个方向</span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-warm-success">✓</span>
-                <span>15次融合/月（下载送+10次=25次）</span>
+                <span>25次融合/月 — 够用了</span>
               </li>
             </ul>
             <div className="text-center">
@@ -36,14 +37,11 @@ export default function PricingSection() {
 
           <div className="bg-warm-accent/15 rounded-2xl p-6 shadow-sm border-2 border-warm-accent/30">
             <h3 className="text-xl font-bold text-warm-dark mb-6">专业版</h3>
+            <p className="text-sm text-warm-dark/50 mb-6">碎片多了、想深入了，再升级。</p>
             <ul className="space-y-3 text-warm-dark/70 mb-6">
               <li className="flex items-center gap-2">
                 <span className="text-warm-success">✓</span>
-                <span>无限拼图片</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-warm-success">✓</span>
-                <span>无限融合</span>
+                <span>无限碎片 + 无限融合</span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-warm-success">✓</span>
@@ -73,12 +71,8 @@ export default function PricingSection() {
           >
             {content.cta}
           </Link>
-          <p className="text-xs text-warm-dark/40 flex items-center justify-center gap-3">
-            <span>🔒 随时取消</span>
-            <span>·</span>
-            <span>无隐藏费用</span>
-            <span>·</span>
-            <span>7天无理由退款</span>
+          <p className="text-xs text-warm-dark/40">
+            免费开始，随时可取消
           </p>
         </div>
       </div>

@@ -1,11 +1,12 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import JourneyMap from '@/components/JourneyMap';
+import { SkeletonCard } from '@/components/Skeleton';
+import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 
-const API_BASE = 'http://localhost:8000';
 
 interface JourneyMapItem {
   id: number;
@@ -27,12 +28,12 @@ export default function JourneyMapListPage() {
   const fetchMaps = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/journey-maps/`);
+      const res = await authFetch('/api/journey-maps/');
       if (!res.ok) throw new Error('加载失败');
       const data = await res.json();
       setMaps(data);
     } catch {
-      toast('加载地图列表失败', 'error');
+      toast('加载拼图失败', 'error');
     } finally {
       setLoading(false);
     }
@@ -43,13 +44,13 @@ export default function JourneyMapListPage() {
   }, [fetchMaps]);
 
   const deleteMap = async (mapId: number) => {
-    if (!confirm('确定要删除这张地图吗？')) return;
+    if (!confirm('确定要删除这张拼图吗？')) return;
     try {
-      const res = await fetch(`${API_BASE}/api/journey-maps/${mapId}`, {
+      const res = await authFetch(`/api/journey-maps/${mapId}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('删除失败');
-      toast('地图已删除', 'success');
+      toast('拼图已删除', 'success');
       fetchMaps();
     } catch {
       toast('删除失败', 'error');
@@ -63,7 +64,7 @@ export default function JourneyMapListPage() {
           onClick={() => setSelectedMap(null)}
           className="mb-4 flex items-center gap-2 text-sm text-warm-dark/60 hover:text-warm-dark"
         >
-          ← 返回地图列表
+          ← 返回我的拼图
         </button>
         <JourneyMap mapId={selectedMap} />
       </div>
@@ -74,31 +75,30 @@ export default function JourneyMapListPage() {
     <div className="p-4 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-warm-dark">我的行进地图</h1>
-          <p className="text-sm text-warm-dark/50 mt-1">每张地图都是一个融合方向的可视化路线</p>
+          <h1 className="text-2xl font-bold text-warm-dark">我的拼图</h1>
+          <p className="text-sm text-warm-dark/50 mt-1">每拼上一块，这里就会亮起来。</p>
         </div>
         <Link
           href="/dashboard/fusion"
           className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium transition-colors"
         >
-          + 新建地图
+          + 新拼图
         </Link>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-warm-dark/50">加载中...</div>
-      ) : maps.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-4xl mb-4">🗺️</div>
-          <h3 className="text-lg font-medium text-warm-dark mb-2">还没有地图</h3>
-          <p className="text-sm text-warm-dark/50 mb-4">去融合页面生成你的第一张行进地图</p>
-          <Link
-            href="/dashboard/fusion"
-            className="inline-flex px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium transition-colors"
-          >
-            开始融合
-          </Link>
+        <div className="space-y-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
+      ) : maps.length === 0 ? (
+        <EmptyState
+          icon="🗺️"
+          title="每拼上一块，这里就会亮起来。"
+          description="每拼上一块，这里就会亮起来。去融合页面拼上你的第一块图吧。不用急，Me等你。"
+          action={{ label: '去拼图', onClick: () => window.location.href = '/dashboard/fusion' }}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {maps.map((map) => (
@@ -153,7 +153,7 @@ export default function JourneyMapListPage() {
                   onClick={(e) => e.stopPropagation()}
                   className="flex-1 text-center py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-medium transition-colors"
                 >
-                  🗺️ 地图视图
+                  🗺️ 拼图视图
                 </Link>
                 <Link
                   href={`/dashboard/journey-map/${map.id}?text=1`}
@@ -170,3 +170,4 @@ export default function JourneyMapListPage() {
     </div>
   );
 }
+import { authFetch  } from '@/lib/api';

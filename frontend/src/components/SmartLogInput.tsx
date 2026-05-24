@@ -1,9 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 
-const API_BASE = 'http://localhost:8000';
 
 interface SmartLogResult {
   category: 'fragment' | 'journal';
@@ -16,11 +15,9 @@ interface SmartLogResult {
 }
 
 const PLACEHOLDERS = [
-  '我喜欢拍照，经常在周末出去拍风景...',
-  '今天送外卖遇到了一个特别的客户...',
-  '我擅长讨价还价，买菜从不吃亏...',
-  '最近在学Python，学到函数了...',
-  '做了8年销售，什么客户都见过...',
+  '比如：很会安慰人 / 能记住很久以前的事 / 看到配色不对就浑身难受……',
+  '比如：朋友遇到事总找我聊 / 每次出门都是我规划路线 / 大家说我做饭有天赋……',
+  '比如：明明很累但就是睡不着 / 听到好消息第一反应是不信 / 看到别人尴尬自己先不舒服……',
 ];
 
 export default function SmartLogInput() {
@@ -43,12 +40,12 @@ export default function SmartLogInput() {
     setResult(null);
 
     try {
-      const res = await fetch(`${API_BASE}/api/smart-log/`, {
+      const res = await authFetch('/api/smart-log/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: input.trim(), user_id: 1 }),
+        body: JSON.stringify({ content: input.trim() }),
       });
-      if (!res.ok) throw new Error('后端响应异常');
+      if (!res.ok) throw new Error('暂时连不上，等一下再试试看');
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResult(data);
@@ -59,7 +56,7 @@ export default function SmartLogInput() {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
       toastTimerRef.current = setTimeout(() => setShowToast(false), 3500);
     } catch (e) {
-      setError(e instanceof Error ? e.message : '请求失败，请稍后重试');
+      setError(e instanceof Error ? e.message : '出了点问题，等会儿再试试看');
     } finally {
       setLoading(false);
     }
@@ -85,10 +82,10 @@ export default function SmartLogInput() {
         {/* 标题区 */}
         <div className="text-center mb-4">
           <h2 className="text-xl sm:text-2xl font-bold text-warm-dark flex items-center justify-center gap-2">
-            <span className="text-2xl">🧩</span> 统一输入流
+            <span className="text-2xl">🧩</span> 随手记
           </h2>
           <p className="text-sm text-warm-dark/50 mt-2">
-            输入任何内容——技能、想法、日常记录——AI自动分拣
+            别想太多。你会什么？喜欢什么？别人老找你帮什么？
           </p>
         </div>
 
@@ -101,7 +98,7 @@ export default function SmartLogInput() {
               href={result.category === 'fragment' ? '/dashboard/fragments' : '/dashboard/journal'}
               className="ml-auto text-xs text-warm-accent hover:text-warm-accent/80 font-medium underline underline-offset-2"
             >
-              去查看 →
+              去看看
             </Link>
           </div>
         )}
@@ -112,7 +109,7 @@ export default function SmartLogInput() {
           {loading && (
             <div className="flex items-center gap-2 mb-3 text-sm text-warm-accent animate-pulse">
               <span className="text-lg">🤔</span>
-              <span>AI 正在识别你的输入...</span>
+              <span>正在看……</span>
               <span className="flex gap-0.5 ml-1">
                 <span className="w-1.5 h-1.5 bg-warm-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-1.5 h-1.5 bg-warm-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -150,17 +147,17 @@ export default function SmartLogInput() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 </span>
-              ) : '🧩 发送'}
+              ) : '🧩 记下来'}
             </button>
           </div>
 
           {/* 快捷提示 */}
           <div className="flex gap-2 mt-2 text-xs text-warm-dark/30">
-            <span>按 Enter 发送</span>
+            <span>Enter 记下</span>
             <span>·</span>
             <span>Shift+Enter 换行</span>
             <span>·</span>
-            <span>AI 自动分拣为碎片或日记</span>
+            <span>想到了就写，它会自己分类</span>
           </div>
 
           {/* 错误 */}
@@ -168,7 +165,7 @@ export default function SmartLogInput() {
             <div className="mt-3 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600 flex items-center gap-2">
               <span>⚠️</span>
               <span>{error}</span>
-              <button onClick={reset} className="ml-auto text-xs text-red-400 hover:text-red-600">重试</button>
+              <button onClick={reset} className="ml-auto text-xs text-red-400 hover:text-red-600">再试一下</button>
             </div>
           )}
 
@@ -241,19 +238,19 @@ export default function SmartLogInput() {
                       href={result.category === 'fragment' ? '/dashboard/fragments' : '/dashboard/journal'}
                       className="flex-1 text-center text-xs py-2 rounded-lg bg-white border border-warm-dark/10 text-warm-dark hover:bg-warm-light hover:border-warm-accent/30 transition-all"
                     >
-                      {result.category === 'fragment' ? '🧩 查看碎片库' : '📝 查看日记'}
+                      {result.category === 'fragment' ? '🧩 去碎片本看看' : '📝 去日记本看看'}
                     </Link>
                     <Link
                       href="/dashboard/puzzle-board"
                       className="flex-1 text-center text-xs py-2 rounded-lg bg-white border border-warm-dark/10 text-warm-dark hover:bg-warm-light hover:border-warm-accent/30 transition-all"
                     >
-                      🔮 去拼图板
+                      🔮 拼拼看
                     </Link>
                     <button
                       onClick={reset}
                       className="shrink-0 px-4 py-2 rounded-lg bg-white border border-warm-dark/10 text-warm-dark/50 hover:text-warm-dark hover:bg-warm-light text-xs transition-all"
                     >
-                      继续输入
+                      再写点
                     </button>
                   </div>
                 </div>
@@ -265,3 +262,4 @@ export default function SmartLogInput() {
     </section>
   );
 }
+import { authFetch   } from '@/lib/api';

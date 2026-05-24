@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
@@ -65,7 +65,6 @@ interface ParsedResult {
 
 // ====== Config ======
 
-const API_BASE = 'http://localhost:8000';
 
 const DIFFICULTY_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
   easy: { label: '上手快', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-400' },
@@ -103,8 +102,8 @@ function previewText(raw: string, maxLen = 80): string {
 function resultToText(record: FusionRecord): string {
   const parsed = safeParseResult(record.result);
   const lines: string[] = [];
-  lines.push(`=== 拼图融合引擎 — 融合结果 ===`);
-  lines.push(`标题: ${record.title}`);
+  lines.push(`=== 拼拼看Me · 方向探索 ===`);
+  lines.push(`方向: ${record.title}`);
   lines.push(`职业: ${record.profession}`);
   lines.push(`时间: ${formatDate(record.created_at)}`);
   lines.push('');
@@ -115,7 +114,7 @@ function resultToText(record: FusionRecord): string {
       lines.push('');
     }
     if (parsed.directions.length > 0) {
-      lines.push(`🎯 融合方向 (${parsed.directions.length}个)`);
+      lines.push(`🎯 这几个方向 (${parsed.directions.length}个)`);
       parsed.directions.forEach((dir, i) => {
         lines.push('');
         lines.push(`方向${i + 1}: ${dir.title}`);
@@ -125,7 +124,7 @@ function resultToText(record: FusionRecord): string {
         if (dir.market_hint) lines.push(`  市场提示: ${dir.market_hint}`);
         if (dir.used_fragments.length > 0) lines.push(`  使用碎片: ${dir.used_fragments.join('、')}`);
         if (dir.roadmap && dir.roadmap.length > 0) {
-          lines.push(`  执行路线:`);
+          lines.push(`  可能路线:`);
           dir.roadmap.forEach(s => lines.push(`    Step ${s.step} (${s.time}): ${s.action}`));
         }
         if (dir.next_action) lines.push(`  📌 下一步: ${dir.next_action}`);
@@ -138,14 +137,14 @@ function resultToText(record: FusionRecord): string {
       lines.push('');
     }
     if (parsed.skill_gaps && parsed.skill_gaps.length > 0) {
-      lines.push(`🔧 技能缺口`);
+      lines.push(`🔧 还差的碎片`);
       parsed.skill_gaps.forEach(g => lines.push(`  🧩 ${g}`));
     }
   } else {
     lines.push(record.result);
   }
   lines.push('');
-  lines.push(`— 由拼图融合引擎生成`);
+  lines.push(`— 由拼拼看Me生成`);
   return lines.join('\n');
 }
 
@@ -172,16 +171,28 @@ export default function HistoryPage() {
     return !term || r.title.toLowerCase().includes(term) || r.profession.toLowerCase().includes(term);
   });
 
+  const [hasMoreFusions, setHasMoreFusions] = useState(false);
+  const [fusionPage, setFusionPage] = useState(1);
+
   useEffect(() => {
-    fetch(`${API_BASE}/api/fusions/`)
+    authFetch(`/api/fusions/?page=${fusionPage}&page_size=20`)
       .then(res => {
         if (!res.ok) throw new Error('加载失败');
         return res.json();
       })
-      .then((data: FusionRecord[]) => setRecords(data))
-      .catch(err => console.error('加载融合历史失败:', err))
+      .then(data => {
+        const items: FusionRecord[] = data?.data?.items ?? [];
+        const pagination = data?.data?.pagination ?? {};
+        if (fusionPage > 1) {
+          setRecords(prev => [...prev, ...items]);
+        } else {
+          setRecords(items);
+        }
+        setHasMoreFusions((pagination.pages ?? 1) > fusionPage);
+      })
+      .catch(err => console.error('加载历史记录失败:', err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [fusionPage]);
 
   const handleExportText = async (record: FusionRecord) => {
     const text = resultToText(record);
@@ -216,7 +227,7 @@ export default function HistoryPage() {
       });
       const link = document.createElement('a');
       const safeTitle = record.title.replace(/[<>:"/\\|?*]/g, '_').slice(0, 30);
-      link.download = `融合结果_${safeTitle}_${formatDate(record.created_at).replace(/[: ]/g, '_')}.png`;
+      link.download = `拼拼看Me_${safeTitle}_${formatDate(record.created_at).replace(/[: ]/g, '_')}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (err) {
@@ -246,12 +257,12 @@ export default function HistoryPage() {
   if (records.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">融合历史</h1>
+        <h1 className="text-2xl font-bold">你走过的路</h1>
         <EmptyState
           icon="📋"
-          title="故事即将开始"
-          description="每一次融合都是独一无二的。当你的拼图片找到彼此时，故事就会在这里展开。"
-          action={{ label: '→ 开始第一次融合', onClick: () => window.location.href = '/dashboard/fusion' }}
+          title="还没有拼过方向"
+          description="你在认识自己的路上。这条路不用快，每一步都算。Me不着急。"
+          action={{ label: '→ 去拼个方向', onClick: () => window.location.href = '/dashboard/fusion' }}
         />
       </div>
     );
@@ -263,9 +274,9 @@ export default function HistoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">融合历史</h1>
+          <h1 className="text-2xl font-bold">你走过的路</h1>
           <span className="px-3 py-1 bg-warm-accent/10 text-warm-accent text-sm font-medium rounded-full">
-            {filteredRecords.length} 次融合
+            {filteredRecords.length} 段记忆
           </span>
         </div>
         {/* Replay Button + Search Input */}
@@ -273,7 +284,7 @@ export default function HistoryPage() {
           <button
             onClick={async () => {
               try {
-                const res = await fetch(`${API_BASE}/api/fusions/replay`);
+                const res = await authFetch('/api/fusions/replay');
                 const data = await res.json();
                 if (data.success && data.events.length > 0) {
                   setReplayEvents(data.events);
@@ -281,19 +292,19 @@ export default function HistoryPage() {
                   setReplayOpen(true);
                   setReplayPlaying(false);
                 } else {
-                  toast('暂无融合记录可回放', 'info');
+                  toast('还没有记录可以回看', 'info');
                 }
               } catch {
-                toast('加载回放数据失败', 'error');
+                toast('加载回看数据失败', 'error');
               }
             }}
             className="px-3 py-2 bg-warm-accent/10 text-warm-accent text-sm font-medium rounded-xl hover:bg-warm-accent/20 transition-colors"
           >
-            🎬 回放演变
+            🎬 回看旅程
           </button>
           <input
             type="text"
-            placeholder="搜索标题或职业..."
+            placeholder="翻翻看..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="px-4 py-2 bg-white border border-warm-dark/10 rounded-xl text-sm focus:outline-none focus:border-warm-accent/50 w-40"
@@ -360,7 +371,7 @@ export default function HistoryPage() {
                   {parsed.directions.length > 0 && (
                     <div className="space-y-3">
                       <h4 className="text-xs font-medium text-warm-dark/40 tracking-wide">
-                        🎯 融合方向
+                        这些碎片，指向这几个方向。
                       </h4>
                       {parsed.directions.map((dir, i) => {
                         const diff = DIFFICULTY_CONFIG[dir.difficulty || 'medium'] || DIFFICULTY_CONFIG.medium;
@@ -386,7 +397,7 @@ export default function HistoryPage() {
                             {/* Roadmap */}
                             {dir.roadmap && dir.roadmap.length > 0 && (
                               <div className="space-y-2 mt-3">
-                                <span className="text-xs text-warm-dark/40">执行路线图</span>
+                                <span className="text-xs text-warm-dark/40">一条可能的路线</span>
                                 <div className="space-y-1.5">
                                   {dir.roadmap.map(s => (
                                     <div
@@ -437,7 +448,7 @@ export default function HistoryPage() {
                   {/* Skill Gaps */}
                   {parsed.skill_gaps && parsed.skill_gaps.length > 0 && (
                     <div className="p-4 rounded-xl bg-white/60 border border-warm-dark/10">
-                      <h4 className="text-xs font-medium text-warm-dark/40 mb-2">🔧 你离更强还差这些拼图</h4>
+                      <h4 className="text-xs font-medium text-warm-dark/40 mb-2">🔧 还差这几块碎片</h4>
                       <div className="space-y-1.5">
                         {parsed.skill_gaps.map((gap, j) => (
                           <div key={j} className="flex items-center gap-2 text-sm text-warm-dark/70">
@@ -476,6 +487,18 @@ export default function HistoryPage() {
         })}
       </div>
 
+      {/* ── Load More ──────────────────────────────────────────── */}
+      {hasMoreFusions && (
+        <div className="flex justify-center pt-2 pb-8">
+          <button
+            onClick={() => setFusionPage(p => p + 1)}
+            className="px-8 py-3 rounded-xl border border-warm-dark/10 text-sm text-warm-dark/50 hover:bg-warm-dark/5 hover:text-warm-dark transition-all"
+          >
+            加载更多
+          </button>
+        </div>
+      )}
+
       {/* ====== Replay Modal ====== */}
       {replayOpen && replayEvents.length > 0 && (
         <div
@@ -487,7 +510,7 @@ export default function HistoryPage() {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-warm-dark">🎬 拼图演变回放</h2>
+              <h2 className="text-lg font-bold text-warm-dark">🎬 回看融合旅程</h2>
               <button
                 onClick={() => { setReplayOpen(false); if (replayTimerRef.current) clearInterval(replayTimerRef.current); setReplayPlaying(false); }}
                 className="text-warm-dark/40 hover:text-warm-dark text-xl"
@@ -516,7 +539,7 @@ export default function HistoryPage() {
                 }`}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-warm-accent font-bold text-sm">融合 #{evt.event_id}</span>
+                  <span className="text-warm-accent font-bold text-sm">第 {evt.event_id} 次探索</span>
                   <span className="text-xs text-warm-dark/40">{evt.created_at ? formatDate(evt.created_at) : ''}</span>
                 </div>
                 <h3 className="font-semibold text-warm-dark mb-2">{evt.title}</h3>
@@ -580,3 +603,4 @@ export default function HistoryPage() {
     </div>
   );
 }
+import { authFetch   } from '@/lib/api';

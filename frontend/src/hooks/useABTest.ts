@@ -148,9 +148,9 @@ function getDefaultContent(section: string): ABVersionContent {
       };
     default:
       return {
-        title: "你散落的能力碎片，可能早就够开一门课了",
-        subtitle: "12年讲台 + 日更3年 + 提分15分 = 作文训练营创始人？AI帮你发现你没看见的自己",
-        cta: "免费试用 →"
+        title: "你本来就有的东西，拼出一个自己。",
+        subtitle: "你身上散落着很多碎片。Me帮你把它们捡起来，拼拼看。",
+        cta: "开始拼 →"
       };
   }
 }

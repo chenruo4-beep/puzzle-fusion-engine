@@ -40,7 +40,7 @@ export default function ShareCard({
       
       // 下载图片
       const link = document.createElement('a');
-      link.download = `拼图融合_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.png`;
+      link.download = `拼拼看Me_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
 
@@ -62,7 +62,7 @@ export default function ShareCard({
       `${i + 1}. ${d.title}（${d.difficulty === 'easy' ? '上手快' : d.difficulty === 'hard' ? '有挑战' : '中等难度'}）`
     ).join('\n');
     
-    return `🧩 我的拼图融合报告
+    return `🧩 我的拼拼看Me报告
 
 "${goldenSentence}"
 
@@ -71,7 +71,7 @@ ${dirText}
 
 🎯 下一步：${directions[0]?.next_action || '开始行动'}
 
-——来自「拼图融合引擎」
+——来自「拼拼看Me」
 你也来试试：localhost:3000`;
   };
 
@@ -93,7 +93,7 @@ ${dirText}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🧩</span>
-            <span className="text-sm font-bold text-[#8B7355]">拼图融合引擎</span>
+            <span className="text-sm font-bold text-[#8B7355]">拼拼看Me</span>
           </div>
           <span className="text-xs text-[#8B7355]/60">
             {new Date().toLocaleDateString('zh-CN')}
@@ -152,7 +152,7 @@ ${dirText}
 
         {/* 底部 */}
         <div className="flex items-center justify-between pt-4 border-t border-[#D4A574]/20">
-          <p className="text-xs text-[#8B7355]/60">拼图融合引擎 · 发现你的可能性</p>
+          <p className="text-xs text-[#8B7355]/60">拼拼看Me · 发现你的可能性</p>
           <span className="text-xl">🧩</span>
         </div>
       </div>

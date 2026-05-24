@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 
@@ -14,8 +14,7 @@ export default function StreakBadge() {
   const [loading, setLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
-
+  
   useEffect(() => {
     fetchStreak();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -23,7 +22,7 @@ export default function StreakBadge() {
 
   const fetchStreak = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/checkins/streak`);
+      const res = await authFetch('/api/checkins/streak');
       if (res.ok) {
         const data = await res.json();
         setStreak(data);
@@ -141,3 +140,4 @@ export default function StreakBadge() {
     </div>
   );
 }
+import { authFetch  } from '@/lib/api';

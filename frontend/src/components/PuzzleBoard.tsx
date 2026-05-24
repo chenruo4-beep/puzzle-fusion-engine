@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 // import { SkeletonCard } from '@/components/Skeleton';
@@ -41,7 +41,6 @@ const TYPE_COLORS: Record<string, string> = {
   '性格': '#9b6c4a',
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // 咬合距离阈值（像素）
 const SNAP_DISTANCE = 60;
@@ -147,7 +146,7 @@ export default function PuzzleBoard() {
 
   // 加载碎片
   useEffect(() => {
-    fetch(`${API_BASE}/api/fragments/`)
+    authFetch('/api/fragments/')
       .then(r => r.json())
       .then((data: Fragment[]) => {
         setFragments(Array.isArray(data) ? data : []);
@@ -163,11 +162,12 @@ export default function PuzzleBoard() {
         if (parsed.profession) setProfession(parsed.profession);
       } else {
         // 从融合历史API获取最近使用的职业
-        fetch(`${API_BASE}/api/fusions/`)
+        authFetch('/api/fusions/?page=1&page_size=1')
           .then(r => r.json())
-          .then((history: Record<string, unknown>[]) => {
-            if (Array.isArray(history) && history.length > 0 && history[0].profession) {
-              setProfession(String(history[0].profession));
+          .then(data => {
+            const items = data?.data?.items ?? [];
+            if (items.length > 0 && items[0].profession) {
+              setProfession(String(items[0].profession));
             }
           })
           .catch(() => {});
@@ -343,7 +343,7 @@ export default function PuzzleBoard() {
     try {
       const engagedIds = Array.from(engagedPieces);
       const engagedFrags = fragments.filter(f => engagedIds.includes(f.id));
-      const res = await fetch(`${API_BASE}/api/fusions/spark`, {
+      const res = await authFetch('/api/fusions/spark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -372,7 +372,7 @@ export default function PuzzleBoard() {
     try {
       const engagedIds = Array.from(engagedPieces).map(id => parseInt(id));
       const title = fusionResult.directions?.[0]?.title || '未命名融合';
-      const res = await fetch(`${API_BASE}/api/fusions/save`, {
+      const res = await authFetch('/api/fusions/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -723,3 +723,4 @@ export default function PuzzleBoard() {
     </div>
   );
 }
+import { authFetch  } from '@/lib/api';

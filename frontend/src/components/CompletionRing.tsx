@@ -40,7 +40,7 @@ export default function CompletionRing({
       <svg width={size} height={size} className="transform -rotate-90">
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#d97746" />
+            <stop offset="0%" stopColor="var(--warm-orange)" />
             <stop offset="50%" stopColor="#e8a860" />
             <stop offset="100%" stopColor="#f0c878" />
           </linearGradient>
@@ -82,7 +82,7 @@ export default function CompletionRing({
         <span
           className="text-2xl font-extrabold"
           style={{
-            background: 'linear-gradient(135deg, #d97746, #e8a860)',
+            background: 'linear-gradient(135deg, var(--warm-orange), #e8a860)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
