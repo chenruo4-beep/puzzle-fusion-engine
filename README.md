@@ -1,64 +1,53 @@
-# 拼图融合引擎 - 快速启动指南
+# 拼拼看Me
 
-## 前置条件
-- Node.js v22.16.0+ ✅
-- Python 3.12.7+ ✅
-- Claude Code CLI 已安装
+个人认知融合引擎 — 通过碎片化的经历、技能、性格，发现个人发展的方向。
 
-## 启动Claude Code开发
+## 快速启动
 
-打开终端（PowerShell），运行：
+### 后端
 
-```powershell
-cd D:\projects\puzzle-fusion-engine
-claude
+```bash
+cd backend
+pip install -r requirements.txt
+python init_db.py     # 首次运行：建表
+python -m uvicorn main:app --reload  # http://localhost:8000
 ```
 
-Claude Code会自动读取当前目录的 `CLAUDE.md` 作为项目上下文。
+### 前端
 
-## 第一周开发任务（复制给Claude Code）
-
-```
-请帮我搭建拼图融合引擎项目骨架，按以下顺序：
-
-1. 前端初始化
-   - 创建 Next.js 14 项目（App Router + TypeScript + Tailwind CSS）
-   - 配置暖色系主题（#3c3a37 #f5f0eb #b8a088 #e8e0d5）
-   - 安装依赖：zustand framer-motion recharts
-
-2. 后端初始化
-   - 创建 FastAPI 项目（Python 3.12.7，路径 D:\Python\python.exe）
-   - 配置 PostgreSQL 连接（本地或Docker）
-   - 安装依赖：fastapi uvicorn sqlalchemy pgvector qdrant-client celery redis
-
-3. 数据库
-   - 运行 schemas.sql 创建所有表（fragments/journal_entries/fusions/checkins/templates）
-   - 录入6个职业模板数据
-
-4. 第一个功能：注册+职业选择+碎片确认
-   - 前端：注册页 + 职业选择页（6卡片） + 碎片确认页
-   - 后端：POST /api/auth/register + GET /api/templates + POST /api/templates/:id/apply
-   - 完成后可注册 → 选职业 → 确认碎片 → 进入dashboard
-
-请开始吧，有问题随时问。
+```bash
+cd frontend
+npm install
+cp .env.example .env.local  # 编辑 API 地址
+npm run dev                  # http://localhost:3000
 ```
 
-## 目录结构（规划）
+## Docker 部署
 
-```
-D:\projects\puzzle-fusion-engine\
-├── CLAUDE.md          # ← Claude Code 项目上下文（已创建）
-├── 执行方案_v1.2.md   # ← 完整执行方案（已复制）
-├── LandingPage_v2.2.md # ← Landing Page文案（已复制）
-├── frontend\          # ← Next.js 14 项目（待创建）
-├── backend\           # ← FastAPI 项目（待创建）
-└── shared\            # ← 共享类型/工具（待创建）
+```bash
+# SQLite（单容器，无外部依赖）
+docker compose up -d
+
+# PostgreSQL（生产级）
+docker compose -f docker-compose.yml -f docker-compose.pg.yml up -d
 ```
 
-## 当前状态
+## Vercel 部署（前端）
 
-前期准备 ✅ → 搭建骨架 🔄 → 功能开发 ⏳
+1. 连接 GitHub 仓库
+2. 设置 `NEXT_PUBLIC_API_URL` 为后端地址
+3. 部署
 
----
-生成时间：2026-05-12
-作者：Ruo Chen + QClaw AI
+## 测试
+
+```bash
+cd backend
+python -m pytest tests/ -v     # 113 tests
+```
+
+## 架构
+
+- **后端**: FastAPI + SQLAlchemy + 内置 AI 融合引擎
+- **前端**: Next.js 14 + Tailwind CSS + Framer Motion
+- **认证**: JWT (HS256, 7天过期)
+- **AI**: 内置规则引擎（无需外部 API），可选 External Provider 兜底
