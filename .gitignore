@@ -34,3 +34,10 @@ Thumbs.db
 coverage_report/
 htmlcov/
 .coverage
+
+# Miniprogram
+miniprogram/node_modules/
+miniprogram/.swc/
+miniprogram/dist/
+miniprogram/package-lock.json
+
