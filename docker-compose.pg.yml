@@ -1,0 +1,30 @@
+# PostgreSQL 覆盖配置
+# 使用: docker compose -f docker-compose.yml -f docker-compose.pg.yml up -d
+
+services:
+  backend:
+    environment:
+      - DATABASE_URL=postgresql://puzzle:puzzle@postgres:5432/puzzle_fusion
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: puzzle
+      POSTGRES_PASSWORD: puzzle
+      POSTGRES_DB: puzzle_fusion
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U puzzle -d puzzle_fusion"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:

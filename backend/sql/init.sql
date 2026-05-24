@@ -1,4 +1,4 @@
--- 拼图融合引擎 - 数据库初始化 SQL
+-- 拼拼看Me - 数据库初始化 SQL
 -- 适用于 PostgreSQL（开发环境可用 SQLite，SQLAlchemy 会自动处理）
 
 -- 用户表

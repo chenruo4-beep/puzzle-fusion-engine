@@ -1,0 +1,19 @@
+# 拼拼看Me - Docker Compose
+# 使用方式：
+#   docker compose up -d                      # SQLite（默认，无外部依赖）
+#   docker compose -f docker-compose.yml -f docker-compose.pg.yml up -d   # PostgreSQL
+#
+# 首次启动会自动建表，数据持久化在 volumes/ 目录
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/data:/app/data
+    restart: unless-stopped

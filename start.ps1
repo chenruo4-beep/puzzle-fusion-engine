@@ -1,6 +1,6 @@
-﻿# 拼图融合引擎 - 一键启动脚本
+﻿# 拼拼看Me - 一键启动脚本
 
-Write-Host "🚀 正在启动拼图融合引擎..." -ForegroundColor Cyan
+Write-Host "🚀 正在启动拼拼看Me..." -ForegroundColor Cyan
 Write-Host ""
 
 # 启动后端（新窗口）
