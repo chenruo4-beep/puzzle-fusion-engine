@@ -11,7 +11,7 @@ class Fusion(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     # 所属用户
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     # 职业/场景
     profession = Column(String(100), nullable=True)
     # 融合标题（AI生成或前端提供）
@@ -32,3 +32,5 @@ class Fusion(Base):
     feedback_reason = Column(Text, nullable=True)
     # 反馈来源（web / mobile）
     feedback_source = Column(String(20), nullable=True)
+    # 低分审核标记：feedback=not_useful 时标记待审核
+    needs_review = Column(Integer, default=0)

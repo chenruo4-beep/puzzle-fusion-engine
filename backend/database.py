@@ -1,4 +1,4 @@
-"""拼图融合引擎 - 数据库连接模块"""
+"""拼拼看Me - 数据库连接模块"""
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base

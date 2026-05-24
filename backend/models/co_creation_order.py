@@ -11,14 +11,14 @@ class CoCreationOrder(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     # 关联的合拍分析
-    co_creation_id = Column(Integer, ForeignKey("co_creations.id"), nullable=False)
-    
+    co_creation_id = Column(Integer, ForeignKey("co_creations.id"), nullable=False, index=True)
+
     # 发起人信息
-    initiator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    initiator_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     initiator_name = Column(String(100), nullable=False)
-    
+
     # 对方信息
-    partner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    partner_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     partner_name = Column(String(100), nullable=False)
     
     # 订单状态

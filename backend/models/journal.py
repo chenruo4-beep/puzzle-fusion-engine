@@ -11,7 +11,7 @@ class JournalEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     # 所属用户
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     # 日记正文
     content = Column(Text, nullable=False)
     # 日记标签（逗号分隔）

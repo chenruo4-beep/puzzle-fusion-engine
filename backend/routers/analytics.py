@@ -1,11 +1,22 @@
-"""A/B测试埋点路由"""
+"""A/B测试埋点路由 + 失败飞轮 + 用户认知模型"""
 
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import func as sql_func
 from database import get_db
 from models.analytics import ABEvent
-from pydantic import BaseModel
+from models.failure import FailureRecord
+from models.fragment import Fragment
+from models.fusion import Fusion
+from models.checkin import CheckIn
+from models.journal import JournalEntry
+from models.journey_map import JourneyMap
+from models.user import User
+from routers.auth import get_current_user
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
+import random
 
 
 router = APIRouter()
@@ -26,8 +37,7 @@ class EventResponse(BaseModel):
     user_id: Optional[str] = None
     timestamp: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 @router.post("/event", response_model=EventResponse)
@@ -106,4 +116,179 @@ async def get_ab_stats(db: Session = Depends(get_db)):
         "total_events": total_events,
         "stats": result_stats,
         "versions": sorted(counts.keys()),
+    }
+
+
+# ── 失败飞轮 ──────────────────────────────────────────────
+
+class FailureReportPayload(BaseModel):
+    fusion_id: int | None = None
+    profession: str | None = None
+    reason: str
+    user_id: int | None = None
+
+
+@router.post("/report-failure")
+def report_failure(payload: FailureReportPayload, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """记录一次失败反馈"""
+    record = FailureRecord(
+        user_id=current_user.id,
+        fusion_id=payload.fusion_id,
+        profession=payload.profession,
+        reason=payload.reason,
+    )
+    db.add(record)
+    db.commit()
+    return {"ok": True, "message": "已记录"}
+
+
+@router.get("/failure-stats")
+def failure_stats(profession: str | None = None, db: Session = Depends(get_db)):
+    """获取失败统计数据"""
+    q = db.query(
+        FailureRecord.reason,
+        sql_func.count(FailureRecord.id).label("cnt")
+    )
+    if profession:
+        q = q.filter(FailureRecord.profession == profession)
+    q = q.group_by(FailureRecord.reason).order_by(sql_func.count(FailureRecord.id).desc())
+
+    rows = q.all()
+    total = sum(r.cnt for r in rows)
+    reasons = [{"reason": r.reason, "count": r.cnt, "pct": round(r.cnt / total * 100) if total > 0 else 0} for r in rows]
+
+    # 根据失败数据生成提示
+    warning = None
+    if total >= 3 and reasons:
+        top = reasons[0]
+        if "太笼统" in top["reason"]:
+            warning = f"选了这条路的人里，{top['pct']}%觉得方案太笼统。如果你也这种感觉，试试要求更具体的行动步骤。"
+        elif "行不通" in top["reason"]:
+            warning = f"这条路有{top['pct']}%的人试过之后觉得行不通。建议先找一个最小版本试一下，不要全量投入。"
+        elif "不符" in top["reason"]:
+            warning = f"{top['pct']}%的人觉得这跟自己的情况不符。你可以试着换两块碎片重新拼一下。"
+
+    return {
+        "total_failures": total,
+        "reasons": reasons,
+        "warning": warning,
+    }
+
+
+# ── 用户认知模型 ──────────────────────────────────────────
+
+USER_PROFILES = {
+    "冲动型": {
+        "action_preference": "冲动型",
+        "action_desc": "你倾向于想到就做，不太纠结细节。这让你启动很快，但有时会踩坑。",
+        "advice": "下次拼出方向后，先花5分钟找一个'最小可试版本'，而不是直接跳进去。",
+        "icons": "⚡",
+    },
+    "观察型": {
+        "action_preference": "观察型",
+        "action_desc": "你喜欢先看清楚再动。这让你少踩很多坑，但有时会错过时机。",
+        "advice": "下次看到想试的方向，给自己定一个'48小时内必须动一下'的小目标。",
+        "icons": "🔍",
+    },
+    "研究型": {
+        "action_preference": "研究型",
+        "action_desc": "你倾向深度研究后再行动。你的方案质量通常很高，但容易陷入'永远在准备'的状态。",
+        "advice": "研究到60%就可以动了。剩下的40%会在行动中自然补上。",
+        "icons": "📚",
+    },
+    "均衡型": {
+        "action_preference": "均衡型",
+        "action_desc": "你在一头扎进去和先想清楚之间找到了平衡。这是一种很难得的状态。",
+        "advice": "保持这个节奏。你现在的挑战不是'怎么动'，而是'往哪个方向动'。",
+        "icons": "⚖️",
+    },
+}
+
+
+@router.get("/user-profile")
+def user_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """分析用户行为，返回认知维度标签"""
+    now = datetime.utcnow()
+    thirty_days_ago = now - timedelta(days=30)
+    user_id = current_user.id
+
+    # 打卡频率
+    total_checkins = db.query(CheckIn).filter(CheckIn.user_id == user_id).count()
+    recent_checkins = db.query(CheckIn).filter(
+        CheckIn.user_id == user_id, CheckIn.created_at >= thirty_days_ago
+    ).count()
+
+    # 融合数据
+    total_fusions = db.query(Fusion).filter(Fusion.user_id == user_id).count()
+    recent_fusions = db.query(Fusion).filter(
+        Fusion.user_id == user_id, Fusion.created_at >= thirty_days_ago
+    ).count()
+
+    # 碎片数据
+    total_fragments = db.query(Fragment).filter(
+        Fragment.user_id == user_id, Fragment.archived == 0
+    ).count()
+
+    # 失败反馈
+    total_failures = db.query(FailureRecord).filter(FailureRecord.user_id == user_id).count()
+    common_failure_reason = None
+    if total_failures > 0:
+        top_reason = (
+            db.query(FailureRecord.reason, sql_func.count(FailureRecord.id).label("cnt"))
+            .filter(FailureRecord.user_id == user_id)
+            .group_by(FailureRecord.reason)
+            .order_by(sql_func.count(FailureRecord.id).desc())
+            .first()
+        )
+        common_failure_reason = top_reason.reason if top_reason else None
+
+    # 日记数据
+    total_journals = db.query(JournalEntry).filter(JournalEntry.user_id == user_id).count()
+
+    # 活跃地图
+    active_maps = db.query(JourneyMap).filter(
+        JourneyMap.user_id == user_id, JourneyMap.status == "active"
+    ).count()
+    completed_maps = db.query(JourneyMap).filter(
+        JourneyMap.user_id == user_id, JourneyMap.status == "completed"
+    ).count()
+
+    # 判断行动偏好
+    if total_fusions == 0:
+        profile = USER_PROFILES["观察型"]
+    elif recent_fusions >= 5 and total_failures >= 3:
+        profile = USER_PROFILES["冲动型"]
+    elif recent_fusions <= 1 and total_fragments > 10:
+        profile = USER_PROFILES["研究型"]
+    elif recent_fusions >= 2 and total_failures <= 1:
+        profile = USER_PROFILES["均衡型"]
+    else:
+        profile = USER_PROFILES["观察型"]
+
+    # 优势领域（从碎片类型推断）
+    fragment_types = (
+        db.query(Fragment.fragment_type, sql_func.count(Fragment.id).label("cnt"))
+        .filter(Fragment.user_id == user_id, Fragment.archived == 0)
+        .group_by(Fragment.fragment_type)
+        .order_by(sql_func.count(Fragment.id).desc())
+        .all()
+    )
+    top_types = [{"type": t, "count": c} for t, c in fragment_types[:3]]
+
+    return {
+        "action_preference": profile["action_preference"],
+        "action_desc": profile["action_desc"],
+        "advice": profile["advice"],
+        "icons": profile["icons"],
+        "stats": {
+            "total_fragments": total_fragments,
+            "total_fusions": total_fusions,
+            "total_journals": total_journals,
+            "total_checkins": total_checkins,
+            "active_maps": active_maps,
+            "completed_maps": completed_maps,
+            "total_failures": total_failures,
+            "common_failure_reason": common_failure_reason,
+        },
+        "top_strengths": top_types,
     }

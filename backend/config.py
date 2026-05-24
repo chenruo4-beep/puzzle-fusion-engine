@@ -1,5 +1,6 @@
-"""拼图融合引擎 - 配置管理模块"""
+"""拼拼看Me - 配置管理模块"""
 
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -15,13 +16,9 @@ class Settings(BaseSettings):
     # 向量数据库
     QDRANT_URL: str = "http://localhost:6333"
 
-    # AI 服务
-    AI_API_KEY: str = ""
-    AI_API_BASE: str = "https://api.openai.com/v1"
-    AI_MODEL: str = "gpt-4o"
+    # AI 服务（已移除外部 AI 依赖，使用内置引擎）
 
-    class Config:
-        env_file = ".env"
+    model_config = ConfigDict(env_file=".env")
 
 
 settings = Settings()

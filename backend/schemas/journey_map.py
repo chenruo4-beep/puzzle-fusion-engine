@@ -1,6 +1,6 @@
 """行进拼图地图 schemas"""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -42,8 +42,7 @@ class MapStepResponse(BaseModel):
     position_y: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class JourneyMapResponse(BaseModel):
@@ -59,8 +58,7 @@ class JourneyMapResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MapProgressUpdate(BaseModel):
@@ -79,8 +77,7 @@ class MapProgressResponse(BaseModel):
     overall_progress: int
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MiniDirection(BaseModel):

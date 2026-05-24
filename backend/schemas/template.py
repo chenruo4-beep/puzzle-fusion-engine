@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class TemplateResponse(BaseModel):
@@ -13,8 +13,7 @@ class TemplateResponse(BaseModel):
     prompts: str  # JSON 字符串
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TemplateApply(BaseModel):

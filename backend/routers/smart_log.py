@@ -1,13 +1,14 @@
 """智能输入流路由 - AI自动分拣到碎片或日记"""
 
 import json
-import threading
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import get_db
 from models.fragment import Fragment
 from models.journal import JournalEntry
+from models.user import User
+from routers.auth import get_current_user
 
 
 router = APIRouter()
@@ -47,7 +48,7 @@ class SmartLogRequest(BaseModel):
 
 
 @router.post("/")
-async def smart_log(payload: SmartLogRequest, db: Session = Depends(get_db)):
+async def smart_log(payload: SmartLogRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """智能输入流：自动判断内容类型并创建对应实体"""
     content = payload.content.strip()
     if not content:
@@ -62,7 +63,7 @@ async def smart_log(payload: SmartLogRequest, db: Session = Depends(get_db)):
         tags = json.dumps({"quality_score": quality_score}, ensure_ascii=False)
 
         fragment = Fragment(
-            user_id=payload.user_id,
+            user_id=current_user.id,
             fragment_type=fragment_type,
             content=content,
             tags=tags,
@@ -78,72 +79,55 @@ async def smart_log(payload: SmartLogRequest, db: Session = Depends(get_db)):
             "content": content,
             "quality_score": quality_score,
             "reason": classification.get("reason", ""),
-            "message": f"已添加为{fragment_type}碎片 ✨"
+            "message": "收到，这是你的一块。"
         }
     else:
         journal = JournalEntry(
-            user_id=payload.user_id,
+            user_id=current_user.id,
             content=content,
         )
         db.add(journal)
         db.commit()
         db.refresh(journal)
 
-        # 后台触发碎片提取
-        try:
-            from routers.journal import _extract_fragments_bg
-            threading.Thread(
-                target=_extract_fragments_bg,
-                args=(journal.id, content),
-                daemon=True
-            ).start()
-        except Exception:
-            pass  # 后台提取失败不影响主流程
+    # 同步提取碎片存为建议
+    try:
+        from routers.journal import _extract_and_suggest
+        await _extract_and_suggest(journal, content, db)
+        db.commit()
+    except Exception:
+        pass  # 提取失败不影响主流程
 
         return {
             "category": "journal",
             "id": journal.id,
             "content": content,
             "reason": classification.get("reason", ""),
-            "message": "已保存为日记，AI正在扫描可提取的碎片... 📝"
+            "message": "收到，这是你的一块。"
         }
 
 
 async def _classify(content: str) -> dict:
-    """AI分类：判断输入是碎片还是日记"""
-    try:
-        from config import settings
-        from openai import AsyncOpenAI
+    """启发式分类：判断输入是碎片还是日记"""
+    journal_kw = ['今天', '昨天', '最近', '感觉', '觉得', '因为', '所以', '然后']
+    is_journal_like = len(content) >= 50 or any(kw in content for kw in journal_kw)
 
-        client = AsyncOpenAI(
-            api_key=settings.AI_API_KEY,
-            base_url=settings.AI_API_BASE,
-            timeout=60.0,
-        )
+    if is_journal_like:
+        return {"category": "journal", "reason": "检测到日常记录特征，已归入日记"}
+    else:
+        # 尝试匹配碎片类型
+        fragment_type = "技能"
+        type_keywords = {
+            '技能': ['会', '能做', '擅长', '精通', '掌握', '编程', '设计', '写', '拍', '修', '做', '开发', '翻译', '开车', '做饭'],
+            '经历': ['曾经', '做过', '参与', '负责', '项目', '公司', '年经验', '之前', '以前', '实习', '工作'],
+            '知识': ['知道', '了解', '学过', '研究', '理论', '原理', '专业', '法律', '金融', '医学', '心理'],
+            '兴趣': ['喜欢', '热爱', '爱好', '感兴趣', '沉迷', '享受', '玩', '运动', '旅行', '读书'],
+            '性格': ['性格', '耐心', '细心', '外向', '内向', '坚持', '乐观', '谨慎', '果断', '负责', '幽默'],
+            '习惯': ['每天', '坚持', '习惯', '日常', '经常', '总是', '定期', '早起', '记日记', '复盘'],
+        }
+        for ftype, keywords in type_keywords.items():
+            if any(kw in content for kw in keywords):
+                fragment_type = ftype
+                break
 
-        response = await client.chat.completions.create(
-            model=settings.AI_MODEL,
-            messages=[
-                {"role": "system", "content": SMART_LOG_SYSTEM_PROMPT},
-                {"role": "user", "content": content}
-            ],
-            temperature=0.3,
-            max_tokens=200,
-        )
-
-        result_text = response.choices[0].message.content.strip()
-        # 清理可能的markdown包裹
-        if result_text.startswith("```"):
-            lines = result_text.split("\n")
-            result_text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
-        return json.loads(result_text)
-
-    except Exception:
-        # 启发式回退：短文本且不像叙事 → 碎片
-        journal_kw = ['今天', '昨天', '最近', '感觉', '觉得', '因为', '所以', '然后']
-        is_journal_like = len(content) >= 50 or any(kw in content for kw in journal_kw)
-
-        if is_journal_like:
-            return {"category": "journal", "reason": "检测到日常记录特征，已归入日记"}
-        else:
-            return {"category": "fragment", "fragment_type": "技能", "quality_score": 3, "reason": "检测到技能/特质特征，已归入碎片"}
+        return {"category": "fragment", "fragment_type": fragment_type, "quality_score": 3, "reason": "检测到技能/特质特征，已归入碎片"}

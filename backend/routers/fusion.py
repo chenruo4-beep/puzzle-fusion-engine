@@ -6,8 +6,12 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 import json
+import logging
 
 from database import get_db
+from models.user import User
+from routers.auth import get_current_user
+from services.ai.cognitive_profile import cognitive_profile
 from models.fusion import Fusion
 from models.fragment import Fragment
 from schemas.fusion import FusionCreate, FusionSaveRequest, FusionResponse
@@ -18,7 +22,10 @@ class FeedbackBody(BaseModel):
     reason: Optional[str] = None  # 选择"没用"时的原因
     source: Optional[str] = 'web'  # 反馈来源
 from services.ai_service import AIService
+from services.ai.quality_monitor import quality_monitor
+from services.billing import check_fusion_limit
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -52,6 +59,17 @@ async def analyze_fragments(body: FusionAnalyzeRequest):
             fragments=fragments_data,
             goal=body.goal,  # 传递用户目标（可选）
         )
+
+        # P3.2: 注入用户风格到 profile_tag
+        if isinstance(result, dict):
+            style_prefix = cognitive_profile.get_style_adjective()
+            if style_prefix and result.get("golden_sentence"):
+                result["golden_sentence"] = style_prefix + result["golden_sentence"]
+            result["cognitive_style"] = cognitive_profile.get_style_adjective()
+
+        # 记录融合次数到质量监控
+        quality_monitor.record_fusion()
+
         return {
             "success": True,
             "data": result,
@@ -75,9 +93,10 @@ async def spark_fragments(body: FusionAnalyzeRequest):
 
 
 @router.post("/save", response_model=FusionResponse, status_code=status.HTTP_201_CREATED)
-async def save_fusion(body: FusionSaveRequest, db: Session = Depends(get_db)):
+async def save_fusion(body: FusionSaveRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """保存融合结果到历史"""
-    user_id = 1  # TODO: 用户认证
+    check_fusion_limit(current_user, db)
+    user_id = current_user.id
 
     fusion = Fusion(
         user_id=user_id,
@@ -93,20 +112,29 @@ async def save_fusion(body: FusionSaveRequest, db: Session = Depends(get_db)):
     return fusion
 
 
-@router.get("/", response_model=list[FusionResponse])
-async def list_fusions(db: Session = Depends(get_db)):
-    """获取当前用户的所有融合历史"""
-    user_id = 1  # TODO: 用户认证
-    return db.query(Fusion).filter(Fusion.user_id == user_id).order_by(Fusion.created_at.desc()).all()
+@router.get("/")
+async def list_fusions(
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """获取当前用户的融合历史，支持分页"""
+    from utils.response import paginated_response
+    user_id = current_user.id
+    q = db.query(Fusion).filter(Fusion.user_id == user_id)
+    total = q.count()
+    items = q.order_by(Fusion.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    return paginated_response(items, total, page, page_size)
 
 
 @router.get("/replay")
-async def replay_fusions(db: Session = Depends(get_db)):
+async def replay_fusions(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     回放融合过程 - 按时间排序返回融合事件列表
     用于前端展示拼图板演变动画
     """
-    user_id = 1  # TODO: 用户认证
+    user_id = current_user.id
     
     # 获取当前用户的所有融合记录（按创建时间排序）
     fusions = db.query(Fusion).filter(Fusion.user_id == user_id).order_by(Fusion.created_at.asc()).all()
@@ -127,8 +155,8 @@ async def replay_fusions(db: Session = Depends(get_db)):
         result_data = None
         try:
             result_data = json.loads(fusion.result) if fusion.result else None
-        except:
-            pass
+        except json.JSONDecodeError:
+            logger.warning("fusion.result 解析失败, id=%d", fusion.id)
         
         title = fusion.title
         if not title and result_data:
@@ -157,29 +185,37 @@ async def replay_fusions(db: Session = Depends(get_db)):
 
 
 @router.get("/{fusion_id}", response_model=FusionResponse)
-async def get_fusion(fusion_id: int, db: Session = Depends(get_db)):
+async def get_fusion(fusion_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """获取单个融合结果详情"""
-    fusion = db.query(Fusion).filter(Fusion.id == fusion_id).first()
+    fusion = db.query(Fusion).filter(Fusion.id == fusion_id, Fusion.user_id == current_user.id).first()
     if not fusion:
         raise HTTPException(status_code=404, detail="融合结果不存在")
     return fusion
 
 
 @router.patch("/{fusion_id}/feedback")
-async def submit_fusion_feedback(fusion_id: int, body: FeedbackBody, db: Session = Depends(get_db)):
+async def submit_fusion_feedback(fusion_id: int, body: FeedbackBody, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """记录融合结果的反馈（有用/没用），支持收集原因用于优化LLM Prompt"""
-    fusion = db.query(Fusion).filter(Fusion.id == fusion_id).first()
+    fusion = db.query(Fusion).filter(Fusion.id == fusion_id, Fusion.user_id == current_user.id).first()
     if not fusion:
         raise HTTPException(status_code=404, detail="融合结果不存在")
 
+    is_useful = body.feedback == 'useful'
     fusion.feedback = body.feedback
     fusion.feedback_at = datetime.utcnow()
     if body.reason:
         fusion.feedback_reason = body.reason
     if body.source:
         fusion.feedback_source = body.source
+    # 标记低分方案进审核池
+    if body.feedback == 'not_useful':
+        fusion.needs_review = 1
     db.commit()
     db.refresh(fusion)
+
+    # 记录反馈到质量监控（用于 confidence 微调 + 告警）
+    quality_monitor.record_feedback(is_useful=is_useful, reason=body.reason or "")
+
     return {
         "message": "反馈已记录",
         "feedback": fusion.feedback,

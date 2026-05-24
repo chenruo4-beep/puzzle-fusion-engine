@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from models.inspiration import Inspiration
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 
 
@@ -52,8 +52,7 @@ class InspirationResponse(BaseModel):
     fragment_count: int
     saved_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 def _inspiration_to_response(insp: Inspiration) -> InspirationResponse:

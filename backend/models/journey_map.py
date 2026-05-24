@@ -11,9 +11,9 @@ class JourneyMap(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     # 所属用户
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     # 关联的融合记录ID
-    fusion_id = Column(Integer, ForeignKey("fusions.id"), nullable=True)
+    fusion_id = Column(Integer, ForeignKey("fusions.id"), nullable=True, index=True)
     # 地图标题（方向名称）
     title = Column(String(100), nullable=False)
     # 地图副标题
@@ -39,7 +39,7 @@ class MapStep(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     # 所属地图
-    map_id = Column(Integer, ForeignKey("journey_maps.id"), nullable=False)
+    map_id = Column(Integer, ForeignKey("journey_maps.id"), nullable=False, index=True)
     # 步骤序号
     step_number = Column(Integer, nullable=False)
     # 步骤名称
@@ -72,9 +72,9 @@ class MapProgress(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     # 所属用户
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     # 所属地图
-    map_id = Column(Integer, ForeignKey("journey_maps.id"), nullable=False)
+    map_id = Column(Integer, ForeignKey("journey_maps.id"), nullable=False, index=True)
     # 当前步骤序号
     current_step = Column(Integer, default=1)
     # 整体进度 0-100

@@ -11,13 +11,13 @@ class CheckIn(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     # 所属用户
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     # 打卡标题（要做什么）
     title = Column(String(200), nullable=False, default="")
     # 具体行动描述
     action = Column(Text, nullable=True)
     # 关联的融合结果
-    fusion_id = Column(Integer, ForeignKey("fusions.id"), nullable=True)
+    fusion_id = Column(Integer, ForeignKey("fusions.id"), nullable=True, index=True)
     # 打卡状态：pending / completed
     status = Column(String(50), default="pending")
     # 用户反馈
@@ -30,3 +30,9 @@ class CheckIn(Base):
     streak_days = Column(Integer, default=0)
     # 是否是新记录（用于动画展示）
     is_new_record = Column(Integer, default=0)
+    # 打卡后的 AI 追问（完成时生成）
+    followup_question = Column(Text, nullable=True)
+    # 用户的追问回答
+    followup_answer = Column(Text, nullable=True)
+    # 从追问回答中提取的新碎片（JSON 数组字符串）
+    followup_fragments = Column(Text, nullable=True)

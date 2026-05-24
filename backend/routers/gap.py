@@ -20,7 +20,6 @@ class GapAnalysisRequest(BaseModel):
     fragments: List[FragmentItem]
     goal: str
     profession: Optional[str] = None
-    use_ai: bool = False  # 是否使用AI深度分析
 
 
 class GapItem(BaseModel):
@@ -63,17 +62,10 @@ async def analyze_gaps(body: GapAnalysisRequest):
 
     fragments_data = [{"type": f.type, "content": f.content} for f in body.fragments]
 
-    if body.use_ai:
-        result = await GapService.analyze_gaps_with_ai(
-            fragments_data,
-            body.goal,
-            body.profession or "",
-        )
-    else:
-        result = GapService.analyze_gaps_heuristic(
-            fragments_data,
-            body.goal,
-        )
+    result = GapService.analyze_gaps_heuristic(
+        fragments_data,
+        body.goal,
+    )
 
     return result
 

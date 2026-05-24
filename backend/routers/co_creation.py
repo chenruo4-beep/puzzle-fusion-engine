@@ -3,10 +3,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from datetime import datetime
+import json
 from database import get_db
 from models.co_creation import CoCreation, CoCreationFragment
 from models.fragment import Fragment
-from pydantic import BaseModel
+from models.user import User
+from routers.auth import get_current_user
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 
 
@@ -33,15 +36,14 @@ class CoCreationResponse(BaseModel):
     result: Optional[str] = None
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 router = APIRouter()
 
 
 @router.post("/analyze")
-async def analyze_co_creation(body: CoCreationCreate, db: Session = Depends(get_db)):
+async def analyze_co_creation(body: CoCreationCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """分析两人合拍度"""
     # 获取碎片
     a_fragments = db.query(Fragment).filter(
@@ -78,9 +80,16 @@ async def analyze_co_creation(body: CoCreationCreate, db: Session = Depends(get_
     # 综合互补性
     complement_score = int((type_complement + content_complement) / 2)
 
-    # 计算成功率（基于碎片质量和互补性）
-    a_quality = sum(f.quality_score or 3 for f in a_fragments) / len(a_fragments)
-    b_quality = sum(f.quality_score or 3 for f in b_fragments) / len(b_fragments)
+    # 提取 quality_score（存在 tags JSON 中）
+    def get_qs(f):
+        try:
+            tags = json.loads(f.tags or '{}')
+            return int(tags.get('quality_score', 3) or 3)
+        except Exception:
+            return 3
+
+    a_quality = sum(get_qs(f) for f in a_fragments) / len(a_fragments)
+    b_quality = sum(get_qs(f) for f in b_fragments) / len(b_fragments)
     avg_quality = (a_quality + b_quality) / 2
     
     # 关系加成
@@ -138,13 +147,11 @@ async def analyze_co_creation(body: CoCreationCreate, db: Session = Depends(get_
         ],
     }
 
-    import json
-    
     # 保存到数据库
     co = CoCreation(
-        user_a_id=1,  # 占位
-        user_a_name=body.user_a_name,
-        user_b_id=2,  # 占位
+        user_a_id=current_user.id,
+        user_a_name=body.user_a_name or current_user.email,
+        user_b_id=0,  # 对方可能未注册，暂时为0
         user_b_name=body.user_b_name,
         relationship=body.relationship,
         project_type=body.project_type,
@@ -174,28 +181,27 @@ async def analyze_co_creation(body: CoCreationCreate, db: Session = Depends(get_
         db.add(cf)
     db.commit()
 
-    return {
-        "success": True,
-        "data": {
-            "id": co.id,
-            "user_a_name": co.user_a_name,
-            "user_b_name": co.user_b_name,
-            "relationship": co.relationship,
-            "project_type": co.project_type,
-            "potential_score": co.potential_score,
-            "complement_score": co.complement_score,
-            "risk_level": co.risk_level,
-            "result": result,
-            "created_at": co.created_at.isoformat() if co.created_at else "",
-        }
-    }
+    return success_response({
+        "id": co.id,
+        "user_a_name": co.user_a_name,
+        "user_b_name": co.user_b_name,
+        "relationship": co.relationship,
+        "project_type": co.project_type,
+        "potential_score": co.potential_score,
+        "complement_score": co.complement_score,
+        "risk_level": co.risk_level,
+        "result": result,
+        "created_at": co.created_at.isoformat() if co.created_at else "",
+    }, "合拍分析成功")
 
 
 @router.get("/")
-async def list_co_creations(db: Session = Depends(get_db)):
-    """获取所有合拍分析"""
-    cos = db.query(CoCreation).order_by(CoCreation.created_at.desc()).all()
-    import json
+async def list_co_creations(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """获取合拍分析列表"""
+    # 只返回当前用户的合拍分析
+    cos = db.query(CoCreation).filter(
+        CoCreation.user_a_id == current_user.id
+    ).order_by(CoCreation.created_at.desc()).all()
     result = []
     for c in cos:
         result.append({
@@ -210,4 +216,4 @@ async def list_co_creations(db: Session = Depends(get_db)):
             "result": json.loads(c.result) if c.result else None,
             "created_at": c.created_at.isoformat() if c.created_at else "",
         })
-    return result
+    return success_response(result, "获取合拍列表成功")

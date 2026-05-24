@@ -11,9 +11,9 @@ class Fragment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     # 所属用户
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     # 来源日记ID
-    journal_id = Column(Integer, ForeignKey("journal_entries.id"), nullable=True)
+    journal_id = Column(Integer, ForeignKey("journal_entries.id"), nullable=True, index=True)
     # 碎片类型：技能/能力/爱好/习惯/知识/经历/资源/性格
     fragment_type = Column(String(20), nullable=True, default="技能")
     # 碎片内容

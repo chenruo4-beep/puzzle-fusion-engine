@@ -1,26 +1,45 @@
 """碎片路由 - 碎片的增删查"""
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from models.fragment import Fragment
-from schemas.fragment import FragmentCreate, FragmentUpdate, FragmentResponse, BatchImportRequest, BatchImportPreviewItem
+from models.user import User
+from routers.auth import get_current_user
+from schemas.fragment import FragmentCreate, FragmentUpdate, FragmentResponse, FragmentArchiveRequest, RateFragmentBody, ConfirmTraitBody, DenyTraitBody, BatchImportRequest, BatchImportPreviewItem
+from utils.response import success_response, bad_request_response, not_found_response, validation_error_response
 from services.ai_service import AIService
+from services.ai.vector_store import upsert_vector, remove_vector
+from services.ai.similarity import jaccard_similarity
+from services.billing import check_fragment_limit
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/", response_model=list[FragmentResponse])
-async def list_fragments(archived_filter: str = "0", db: Session = Depends(get_db)):
-    """获取碎片列表，默认只显示活跃碎片"""
-    q = db.query(Fragment).filter(Fragment.user_id == 1)
+@router.get("/")
+async def list_fragments(
+    archived_filter: str = "0",
+    page: int = 1,
+    page_size: int = 30,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """获取碎片列表，支持分页，默认只显示活跃碎片"""
+    from utils.response import paginated_response
+
+    q = db.query(Fragment).filter(Fragment.user_id == current_user.id)
     if archived_filter == "all":
         pass
     elif archived_filter == "1":
         q = q.filter(Fragment.archived == 1)
     else:
         q = q.filter(Fragment.archived == 0)
-    return q.order_by(Fragment.created_at.desc()).all()
+
+    total = q.count()
+    items = q.order_by(Fragment.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    return paginated_response(items, total, page, page_size)
 
 
 @router.get("/recommend")
@@ -28,13 +47,14 @@ async def recommend_fragments(
     target_id: int,
     exclude_ids: str = "",
     limit: int = 5,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """AI推荐相关碎片：基于选中碎片推荐高质量相关内容"""
     import json
 
     # 获取目标碎片
-    target = db.query(Fragment).filter(Fragment.id == target_id, Fragment.user_id == 1).first()
+    target = db.query(Fragment).filter(Fragment.id == target_id, Fragment.user_id == current_user.id).first()
     if not target:
         raise HTTPException(status_code=404, detail="碎片不存在")
 
@@ -42,35 +62,27 @@ async def recommend_fragments(
     excluded = set(int(x) for x in exclude_ids.split(",") if x.strip().isdigit())
     excluded.add(target_id)  # 排除自身
 
-    def jaccard(s1: str, s2: str) -> float:
-        def ngrams(s, n=2):
-            s = s.strip().lower()
-            return set(s[i:i+n] for i in range(len(s)-n+1)) if len(s) >= n else set(s)
-        a = ngrams(s1); b = ngrams(s2)
-        if not a or not b: return 0.0
-        return len(a & b) / len(a | b)
-
-    def quality_score(f: Fragment) -> int:
-        try:
-            obj = json.loads(f.tags or "{}")
-            return int(obj.get("quality_score", 0) or 0)
-        except:
-            return 0
-
     # 扫描所有活跃碎片
     all_frags = db.query(Fragment).filter(
-        Fragment.user_id == 1,
+        Fragment.user_id == current_user.id,
         Fragment.archived == 0,
         Fragment.id.notin_(excluded)
     ).all()
 
+    def _quality_score(f: Fragment) -> int:
+        try:
+            obj = json.loads(f.tags or "{}")
+            return int(obj.get("quality_score", 0) or 0)
+        except Exception:
+            logger.warning("parse quality_score failed, id=%d", f.id)
+            return 0
+
     scored: list[dict] = []
     for f in all_frags:
-        # 同一类型权重更高 (1.5x)，不同类型也有机会推荐
-        sim = jaccard(target.content, f.content)
+        sim = jaccard_similarity(target.content, f.content)
         if f.fragment_type == target.fragment_type:
             sim *= 1.5
-        qs = quality_score(f)
+        qs = _quality_score(f)
         # 综合分 = 相似度 * (质量分数/5)，鼓励选高质量碎片
         composite = sim * (0.5 + 0.5 * (qs / 5.0))
         if composite > 0.05:  # 阈值过滤
@@ -87,12 +99,13 @@ async def recommend_fragments(
     return {"target_id": target_id, "recommendations": scored[:limit]}
 
 
-@router.post("/", response_model=FragmentResponse, status_code=status.HTTP_201_CREATED)
-async def create_fragment(body: FragmentCreate, db: Session = Depends(get_db)):
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_fragment(body: FragmentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """创建新的碎片，AI自动评分（后台异步）"""
+    check_fragment_limit(current_user, db)
     import json as _json
     fragment = Fragment(
-        user_id=1,
+        user_id=current_user.id,
         journal_id=body.journal_id,
         fragment_type=body.fragment_type,
         content=body.content,
@@ -123,20 +136,23 @@ async def create_fragment(body: FragmentCreate, db: Session = Depends(get_db)):
     import asyncio
     asyncio.create_task(_auto_score())
 
-    return fragment
+    # 同步写入向量索引
+    upsert_vector(fragment.id, fragment.fragment_type, fragment.content, current_user.id)
+
+    return success_response(fragment, "碎片创建成功", 201)
 
 
 @router.post("/batch-import", response_model=list[BatchImportPreviewItem])
 async def batch_import_fragments(body: BatchImportRequest):
     """批量导入：粘贴文本→AI拆分为碎片预览"""
     fragments = await AIService.batch_import_fragments(body.text)
-    return fragments
+    return success_response(fragments, "批量导入成功")
 
 
-@router.put("/{fragment_id}", response_model=FragmentResponse)
-async def update_fragment(fragment_id: int, body: FragmentUpdate, db: Session = Depends(get_db)):
+@router.put("/{fragment_id}")
+async def update_fragment(fragment_id: int, body: FragmentUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """编辑指定碎片"""
-    fragment = db.query(Fragment).filter(Fragment.id == fragment_id).first()
+    fragment = db.query(Fragment).filter(Fragment.id == fragment_id, Fragment.user_id == current_user.id).first()
     if not fragment:
         raise HTTPException(status_code=404, detail="碎片不存在")
     if body.fragment_type is not None:
@@ -149,63 +165,45 @@ async def update_fragment(fragment_id: int, body: FragmentUpdate, db: Session = 
         fragment.archived = body.archived
     db.commit()
     db.refresh(fragment)
-    return fragment
+
+    # 内容变更时同步更新向量索引
+    if body.content is not None or body.fragment_type is not None:
+        upsert_vector(fragment.id, fragment.fragment_type, fragment.content)
+
+    return success_response(fragment, "碎片更新成功")
 
 
 @router.patch("/{fragment_id}/rate")
-async def rate_fragment(fragment_id: int, body: dict, db: Session = Depends(get_db)):
+async def rate_fragment(fragment_id: int, body: RateFragmentBody, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """给碎片评分：quality_score 1-5（1=垃圾，5=精品）"""
-    fragment = db.query(Fragment).filter(Fragment.id == fragment_id).first()
+    fragment = db.query(Fragment).filter(Fragment.id == fragment_id, Fragment.user_id == current_user.id).first()
     if not fragment:
         raise HTTPException(status_code=404, detail="碎片不存在")
-    score = body.get("quality_score")
-    if score is not None:
-        if not isinstance(score, int) or score < 1 or score > 5:
-            raise HTTPException(status_code=400, detail="quality_score 必须是 1-5 的整数")
-        import json
-        tags_obj = json.loads(fragment.tags) if fragment.tags else {}
-        tags_obj["quality_score"] = score
-        fragment.tags = json.dumps(tags_obj)
-        db.commit()
-    return {"id": fragment.id, "quality_score": score}
+    import json
+    tags_obj = json.loads(fragment.tags) if fragment.tags else {}
+    tags_obj["quality_score"] = body.quality_score
+    fragment.tags = json.dumps(tags_obj)
+    db.commit()
+    return success_response({"id": fragment.id, "quality_score": body.quality_score}, "评分成功")
 
 
 @router.patch("/{fragment_id}/archive")
-async def toggle_archive(fragment_id: int, body: dict, db: Session = Depends(get_db)):
+async def toggle_archive(fragment_id: int, body: FragmentArchiveRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """切换归档状态：archived=1归档，archived=0激活"""
-    fragment = db.query(Fragment).filter(Fragment.id == fragment_id).first()
+    fragment = db.query(Fragment).filter(Fragment.id == fragment_id, Fragment.user_id == current_user.id).first()
     if not fragment:
         raise HTTPException(status_code=404, detail="碎片不存在")
-    archived = body.get("archived")
-    if archived not in (0, 1):
-        raise HTTPException(status_code=400, detail="archived 必须是 0 或 1")
-    fragment.archived = archived
+    fragment.archived = body.archived
     db.commit()
     return {"id": fragment.id, "archived": fragment.archived}
 
 
 @router.post("/deduplicate")
-async def deduplicate_fragments(db: Session = Depends(get_db)):
+async def deduplicate_fragments(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """扫描相似碎片，返回候选去重对列表（同类型 bigram Jaccard > 0.6）"""
     import json
 
-    def jaccard_similarity(s1: str, s2: str) -> float:
-        def ngrams(s, n=2):
-            s = s.strip().lower()
-            return set(s[i:i+n] for i in range(len(s)-n+1)) if len(s) >= n else set(s)
-        a = ngrams(s1); b = ngrams(s2)
-        if not a and not b:
-            return 0.0
-        return len(a & b) / len(a | b)
-
-    def get_score(f):
-        try:
-            obj = json.loads(f.tags or '{}')
-            return obj.get('quality_score', 0) or 0
-        except:
-            return 0
-
-    fragments = db.query(Fragment).filter(Fragment.user_id == 1).all()
+    fragments = db.query(Fragment).filter(Fragment.user_id == current_user.id).all()
 
     by_type: dict[str, list] = {}
     for f in fragments:
@@ -228,9 +226,11 @@ async def deduplicate_fragments(db: Session = Depends(get_db)):
                 seen_pairs.add(pair_key)
                 sim = jaccard_similarity(f1.content, f2.content)
                 if sim > 0.6:
+                    qs_a = json.loads(f1.tags or '{}').get('quality_score', 0) or 0
+                    qs_b = json.loads(f2.tags or '{}').get('quality_score', 0) or 0
                     candidates.append({
-                        'fragment_a': {'id': f1.id, 'content': f1.content, 'fragment_type': f1.fragment_type, 'quality_score': get_score(f1)},
-                        'fragment_b': {'id': f2.id, 'content': f2.content, 'fragment_type': f2.fragment_type, 'quality_score': get_score(f2)},
+                        'fragment_a': {'id': f1.id, 'content': f1.content, 'fragment_type': f1.fragment_type, 'quality_score': qs_a},
+                        'fragment_b': {'id': f2.id, 'content': f2.content, 'fragment_type': f2.fragment_type, 'quality_score': qs_b},
                         'similarity': round(sim, 3),
                     })
 
@@ -239,7 +239,7 @@ async def deduplicate_fragments(db: Session = Depends(get_db)):
 
 
 @router.get("/clusters")
-async def get_clusters(db: Session = Depends(get_db)):
+async def get_clusters(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """智能组块推荐：将拼图片按语义聚类为3-5个组块，每组有颜色主题"""
     import json
     from collections import defaultdict
@@ -262,16 +262,8 @@ async def get_clusters(db: Session = Depends(get_db)):
         "资源": "资源网络", "性格": "性格特质",
     }
 
-    def jaccard(s1: str, s2: str) -> float:
-        def ngrams(s, n=2):
-            s = s.strip().lower()
-            return set(s[i:i+n] for i in range(len(s)-n+1)) if len(s) >= n else set(s)
-        a = ngrams(s1); b = ngrams(s2)
-        if not a or not b: return 0.0
-        return len(a & b) / len(a | b)
-
     fragments = db.query(Fragment).filter(
-        Fragment.user_id == 1, Fragment.archived == 0
+        Fragment.user_id == current_user.id, Fragment.archived == 0
     ).all()
 
     if len(fragments) < 3:
@@ -313,7 +305,7 @@ async def get_clusters(db: Session = Depends(get_db)):
 
         for i in range(n):
             for j in range(i + 1, n):
-                sim = jaccard(group[i].content, group[j].content)
+                sim = jaccard_similarity(group[i].content, group[j].content)
                 if sim > 0.15:
                     union(i, j)
 
@@ -330,7 +322,7 @@ async def get_clusters(db: Session = Depends(get_db)):
                 count = 0
                 for i in range(len(members)):
                     for j in range(i + 1, len(members)):
-                        total_sim += jaccard(members[i].content, members[j].content)
+                        total_sim += jaccard_similarity(members[i].content, members[j].content)
                         count += 1
                 avg_sim = total_sim / count if count > 0 else 0.0
 
@@ -369,7 +361,7 @@ async def get_clusters(db: Session = Depends(get_db)):
             tags_obj = {}
             try:
                 tags_obj = json.loads(f.tags or "{}")
-            except:
+            except json.JSONDecodeError:
                 pass
             frag_items.append({
                 "id": f.id,
@@ -392,7 +384,7 @@ async def get_clusters(db: Session = Depends(get_db)):
 
 
 @router.get("/gaps")
-async def get_gaps(db: Session = Depends(get_db)):
+async def get_gaps(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """缺口识别：分析现有拼图片，生成灰色"缺口"拼图片建议"""
     import json
 
@@ -454,15 +446,6 @@ async def get_gaps(db: Session = Depends(get_db)):
         "资源": "#8aab6a", "性格": "#a68c7a",
     }
 
-    def jaccard(s1: str, s2: str) -> float:
-        """2-gram Jaccard相似度"""
-        def ngrams(s, n=2):
-            s = s.strip().lower()
-            return set(s[i:i+n] for i in range(len(s)-n+1)) if len(s) >= n else set(s)
-        a = ngrams(s1); b = ngrams(s2)
-        if not a or not b: return 0.0
-        return len(a & b) / len(a | b)
-
     def contains_keywords(user_text: str, capability: str) -> float:
         """关键词匹配：从capability中提取关键词，检查user_text是否包含"""
         import re
@@ -476,7 +459,7 @@ async def get_gaps(db: Session = Depends(get_db)):
 
     # 获取所有活跃碎片
     fragments = db.query(Fragment).filter(
-        Fragment.user_id == 1, Fragment.archived == 0
+        Fragment.user_id == current_user.id, Fragment.archived == 0
     ).all()
 
     # 按类型组织用户已有内容
@@ -495,7 +478,7 @@ async def get_gaps(db: Session = Depends(get_db)):
             best_sim = 0.0
             for uc in user_contents:
                 # 组合相似度：Jaccard + 关键词匹配
-                jac = jaccard(cap, uc)
+                jac = jaccard_similarity(cap, uc)
                 kw = contains_keywords(uc, cap)
                 combined = max(jac * 0.7 + kw * 0.3, kw)  # 关键词匹配权重更高
                 if combined > best_sim:
@@ -539,34 +522,20 @@ async def get_gaps(db: Session = Depends(get_db)):
 async def get_fragment_relations(
     fragment_id: int,
     limit: int = 3,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """碎片关联发现：基于内容相似度和共现分析，返回关联碎片列表"""
     import json
 
     # 获取目标碎片
-    target = db.query(Fragment).filter(Fragment.id == fragment_id, Fragment.user_id == 1).first()
+    target = db.query(Fragment).filter(Fragment.id == fragment_id, Fragment.user_id == current_user.id).first()
     if not target:
         raise HTTPException(status_code=404, detail="碎片不存在")
 
-    def jaccard(s1: str, s2: str) -> float:
-        def ngrams(s, n=2):
-            s = s.strip().lower()
-            return set(s[i:i+n] for i in range(len(s)-n+1)) if len(s) >= n else set(s)
-        a = ngrams(s1); b = ngrams(s2)
-        if not a or not b: return 0.0
-        return len(a & b) / len(a | b)
-
-    def get_quality_score(f: Fragment) -> int:
-        try:
-            obj = json.loads(f.tags or "{}")
-            return int(obj.get("quality_score", 0) or 0)
-        except:
-            return 0
-
     # 获取所有其他活跃碎片
     all_frags = db.query(Fragment).filter(
-        Fragment.user_id == 1,
+        Fragment.user_id == current_user.id,
         Fragment.archived == 0,
         Fragment.id != fragment_id
     ).all()
@@ -574,13 +543,18 @@ async def get_fragment_relations(
     # 计算关联分数
     scored: list[dict] = []
     for f in all_frags:
-        sim = jaccard(target.content, f.content)
+        sim = jaccard_similarity(target.content, f.content)
 
         # 同类型加成
         type_bonus = 1.5 if f.fragment_type == target.fragment_type else 1.0
 
         # 质量分数加成
-        qs = get_quality_score(f)
+        try:
+            tags_obj = json.loads(f.tags or "{}")
+            qs = int(tags_obj.get("quality_score", 0) or 0)
+        except Exception:
+            logger.warning("parse quality_score failed in related, id=%d", f.id)
+            qs = 0
         quality_boost = 1.0 + (qs / 10.0)  # 最高1.5x
 
         # 综合关联度
@@ -628,11 +602,216 @@ async def get_fragment_relations(
     }
 
 
+@router.get("/guess-traits")
+async def guess_traits(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """根据已有碎片推测用户可能拥有的隐藏特质，每次返回3条"""
+    from collections import Counter
+    from datetime import datetime, timedelta
+
+    fragments = db.query(Fragment).filter(
+        Fragment.user_id == current_user.id, Fragment.archived == 0
+    ).all()
+
+    if len(fragments) < 3:
+        return {"traits": []}
+
+    type_counts = Counter(f.fragment_type for f in fragments)
+    all_content = " ".join(f.content for f in fragments)
+    recent = any(
+        (datetime.utcnow() - f.created_at).days < 7
+        for f in fragments if f.created_at
+    )
+
+    TRAIT_POOL = [
+        ("技能", "你似乎很擅长把复杂的事情讲简单"),
+        ("能力", "你似乎更容易在单线程深度工作中进入心流"),
+        ("能力", "你可能有一种罕见的专注力，能一个人待一整天不觉得无聊"),
+        ("性格", "你似乎天生有共情力，别人愿意跟你说心里话"),
+        ("能力", "你可能比你自己以为的更有执行力，只是需要一个小目标"),
+        ("知识", "你吸收信息的速度可能比周围的人快"),
+        ("习惯", "你似乎有一种自然的节奏感，知道什么时候该冲什么时候该歇"),
+        ("资源", "你可能有一些你自己都没当回事的人脉"),
+        ("性格", "你的好奇心可能比你意识到的更强"),
+        ("能力", "你似乎能从混乱中找到规律"),
+        ("技能", "你可能有一种'让人放心'的能力，交给你的事都能闭环"),
+        ("经历", "你的经历组合可能是独一无二的，很难被复制"),
+        ("爱好", "你做某件事的时候可能进入心流状态，那是一个信号"),
+        ("技能", "你似乎有在压力下保持冷静的能力"),
+        ("能力", "你可能擅长在有限资源下找到最优解"),
+    ]
+
+    score: dict[int, float] = {}
+    for i, (t, text) in enumerate(TRAIT_POOL):
+        s = 0.0
+        if t in type_counts:
+            s += type_counts[t] * 0.5
+        if recent:
+            s += 0.3
+        score[i] = s + (hash(text) % 100) / 200.0
+        if len(fragments) >= 10:
+            score[i] += 0.2
+
+    scored = sorted(score.items(), key=lambda x: x[1], reverse=True)
+    import random
+    rng = random.Random(sum(hash(f.content) for f in fragments))
+    top = scored[:10]
+    selected = rng.sample(top, min(3, len(top)))
+    selected.sort(key=lambda x: x[1], reverse=True)
+
+    return {
+        "traits": [
+            {"text": TRAIT_POOL[i][1], "fragment_type": TRAIT_POOL[i][0]}
+            for i, _ in selected
+        ]
+    }
+
+
+@router.post("/confirm-trait")
+async def confirm_trait(body: ConfirmTraitBody, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """用户确认一个推测特质，加入碎片池"""
+    fragment = Fragment(
+        user_id=current_user.id,
+        fragment_type=body.fragment_type,
+        content=body.text,
+        tags='{"source": "reverse_confirmation", "quality_score": 3}',
+    )
+    db.add(fragment)
+    db.commit()
+    db.refresh(fragment)
+    upsert_vector(fragment.id, fragment.fragment_type, fragment.content, current_user.id)
+    return {"id": fragment.id, "content": fragment.content, "fragment_type": fragment.fragment_type}
+
+
+@router.post("/deny-trait")
+async def deny_trait(body: DenyTraitBody):
+    """用户否认一个推测特质（仅记录，不创建碎片）"""
+    return {"status": "recorded", "text": body.text}
+
+
+@router.get("/stats")
+async def fragment_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """获取碎片统计数据，用于能力光谱可视化"""
+    from collections import defaultdict
+    from datetime import datetime
+
+    fragments = db.query(Fragment).filter(
+        Fragment.user_id == current_user.id, Fragment.archived == 0
+    ).all()
+
+    types: dict[str, dict] = defaultdict(lambda: {"count": 0, "last_activated": None})
+
+    for f in fragments:
+        t = f.fragment_type or "其他"
+        types[t]["count"] += 1
+        if f.created_at:
+            d = f.created_at.strftime("%Y-%m-%d") if isinstance(f.created_at, datetime) else str(f.created_at)[:10]
+            if types[t]["last_activated"] is None or d > types[t]["last_activated"]:
+                types[t]["last_activated"] = d
+
+    return {
+        "total_fragments": len(fragments),
+        "types": dict(types),
+    }
+
+
 @router.delete("/{fragment_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_fragment(fragment_id: int, db: Session = Depends(get_db)):
+async def delete_fragment(fragment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """删除指定碎片"""
-    fragment = db.query(Fragment).filter(Fragment.id == fragment_id).first()
+    fragment = db.query(Fragment).filter(Fragment.id == fragment_id, Fragment.user_id == current_user.id).first()
     if not fragment:
         raise HTTPException(status_code=404, detail="碎片不存在")
+    remove_vector(fragment_id)
     db.delete(fragment)
     db.commit()
+
+
+@router.post("/let-go/{fragment_id}")
+async def let_go_fragment(fragment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """放下仪式：将碎片标记为'放下'，归档并附加特殊标记"""
+    fragment = db.query(Fragment).filter(Fragment.id == fragment_id, Fragment.user_id == current_user.id).first()
+    if not fragment:
+        raise HTTPException(status_code=404, detail="碎片不存在")
+    fragment.archived = 1
+    if fragment.tags:
+        fragment.tags = fragment.tags + ", 我选择不再背负的"
+    else:
+        fragment.tags = "我选择不再背负的"
+    db.commit()
+    return {"ok": True, "message": "已放入'放下'区域"}
+
+
+@router.get("/let-go-area")
+async def get_let_go_area(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """获取'放下'区域中的所有碎片"""
+    fragments = db.query(Fragment).filter(
+        Fragment.user_id == current_user.id,
+        Fragment.archived == 1,
+        Fragment.tags.like("%我选择不再背负的%")
+    ).order_by(Fragment.created_at.desc()).all()
+    return [
+        {
+            "id": f.id,
+            "fragment_type": f.fragment_type,
+            "content": f.content,
+            "created_at": f.created_at,
+        }
+        for f in fragments
+    ]
+
+
+@router.post("/un-let-go/{fragment_id}")
+async def un_let_go_fragment(fragment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """取消放下：将碎片从'放下'区域移回活跃区"""
+    fragment = db.query(Fragment).filter(Fragment.id == fragment_id, Fragment.user_id == current_user.id).first()
+    if not fragment:
+        raise HTTPException(status_code=404, detail="碎片不存在")
+    fragment.archived = 0
+    if fragment.tags:
+        fragment.tags = fragment.tags.replace(", 我选择不再背负的", "")
+    db.commit()
+    return {"ok": True, "message": "已从'放下'区域移回"}
+
+
+# 碎片类型 → 场景优势索引（策划维护）
+SCENE_INDEX = {
+    "技能": {
+        "scenes": ["独立完成项目", "帮助他人解决问题", "快速上手新工具"],
+        "advantage": "拥有这个碎片的人，在需要动手实操的场景中起点比普通人高。你不需要从零学起，只需要找到对的场景。",
+    },
+    "知识": {
+        "scenes": ["做决策", "给别人解释复杂的事", "发现别人看不到的规律"],
+        "advantage": "你知道的东西，会在意想不到的时候派上用场。在需要'看得更远'的场景里，你天然有优势。",
+    },
+    "特质": {
+        "scenes": ["建立信任关系", "处理冲突", "让别人感到被理解"],
+        "advantage": "这种特质会让人觉得'跟你在一起很舒服'。在需要深度信任的场景中，你比别人更容易打开局面。",
+    },
+    "经验": {
+        "scenes": ["避免踩坑", "判断一件事靠不靠谱", "带新人"],
+        "advantage": "走过的路不会白走。在需要判断'这事能不能成'的场景里，你的直觉比别人的分析更准。",
+    },
+    "兴趣": {
+        "scenes": ["找到同频的人", "发现新的可能性", "把一件事持续做下去"],
+        "advantage": "当一件事跟你的兴趣有关时，你不需要'坚持'——你天然比别人更能沉进去，也更容易做出彩。",
+    },
+    "资源": {
+        "scenes": ["连接人与机会", "整合分散的力量", "让事情快速落地"],
+        "advantage": "你手里握着别人需要的钥匙。在需要'把事办成'的场景里，你的资源网络就是加速器。",
+    },
+    "直觉": {
+        "scenes": ["快速判断一个人", "在信息不全时做决定", "发现隐藏的问题"],
+        "advantage": "你的直觉是一种很少有人能解释清楚的能力。在需要快速判断的场景里，相信你的第一反应。",
+    },
+}
+
+
+@router.get("/scene-index/{fragment_type}")
+async def get_scene_index(fragment_type: str):
+    """获取碎片类型对应的场景优势信息"""
+    entry = SCENE_INDEX.get(fragment_type)
+    if not entry:
+        entry = {
+            "scenes": ["认识自己", "发现潜力", "找到方向"],
+            "advantage": "每块碎片都有它独特的价值。随着你积累更多，这些场景会越来越清晰。",
+        }
+    return {"fragment_type": fragment_type, **entry}

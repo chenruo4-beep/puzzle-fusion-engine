@@ -11,10 +11,10 @@ class CoCreation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     # 用户A
-    user_a_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_a_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     user_a_name = Column(String(100), nullable=False, default="")
     # 用户B
-    user_b_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_b_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     user_b_name = Column(String(100), nullable=False, default="")
     # 关系类型
     relationship = Column(String(50), nullable=False, default="partner")  # partner/lover/spouse/friend
@@ -40,6 +40,6 @@ class CoCreationFragment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     co_creation_id = Column(Integer, ForeignKey("co_creations.id"), nullable=False)
-    fragment_id = Column(Integer, ForeignKey("fragments.id"), nullable=False)
+    fragment_id = Column(Integer, ForeignKey("fragments.id"), nullable=False, index=True)
     user_role = Column(String(10), nullable=False)  # 'a' or 'b'
     created_at = Column(DateTime(timezone=True), server_default=func.now())
