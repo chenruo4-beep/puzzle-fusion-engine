@@ -6,6 +6,8 @@ from models.journal import JournalEntry
 from models.fusion import Fusion
 from models.checkin import CheckIn
 from models.template import Template
+from models.email_preference import EmailPreference
+from models.community import Comment, Like
 
 __all__ = [
     "User",
@@ -14,4 +16,7 @@ __all__ = [
     "Fusion",
     "CheckIn",
     "Template",
+    "EmailPreference",
+    "Comment",
+    "Like",
 ]

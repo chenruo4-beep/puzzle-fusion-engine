@@ -1,0 +1,158 @@
+{
+  "landing": {
+    "hero": {
+      "title": "拼拼看引擎\n释放你的潜能",
+      "subtitle": "一种学习、创造和成长的新方式。",
+      "cta": "开始使用",
+      "choose_profession": "选择你的职业，2分钟完成入门"
+    },
+    "common": {
+      "loading": "加载中...",
+      "error": "错误",
+      "success": "成功",
+      "cancel": "取消",
+      "confirm": "确认",
+      "save": "保存",
+      "delete": "删除",
+      "edit": "编辑",
+      "view": "查看"
+    },
+    "journey": {
+      "title": "你的旅途",
+      "subtitle": "每个人都有自己的成长路径，拼拼看Me帮你看见它",
+      "selfTitle": "我的旅途",
+      "selfDesc": "记录碎片、融合经验、生成行动卡——你的成长，一目了然",
+      "selfCta": "开始我的旅途",
+      "tags": {
+        "fragment": "碎片",
+        "fusion": "融合",
+        "action": "行动"
+      },
+      "coCreateReady1": "你有足够的碎片了，来试试合拍功能吧！",
+      "coCreateReady2": "碎片不少了，想找人一起拼吗？",
+      "coCreateReady3": "继续收集碎片，8个以上可以开启合拍"
+    },
+    "fragmentMessages": {
+      "enough": "——够做一次融合了！",
+      "keepCollecting": "——继续收集，越多越好",
+      "coAction": "查看我的合拍",
+      "exploreAction": "探索合拍功能"
+    },
+    "processValue": {
+      "title": "过程即价值",
+      "desc": "拼拼看Me不只是一个工具，它是一个过程。当你开始记录碎片、反思经验，改变已经在发生。",
+      "quote": "重要的不是拼出什么，而是拼的过程中你发现了什么。"
+    },
+    "different": {
+      "title": "为什么拼拼看Me不同",
+      "subtitle": "我们不是又一个聊天机器人，我们是你的成长伙伴",
+      "compareItem": "对比项",
+      "compareChatgpt": "ChatGPT",
+      "compareMe": "拼拼看Me",
+      "compareFragments": "碎片记录",
+      "compareFragmentsChatgpt": "对话即忘",
+      "compareFragmentsMe": "持久保存，智能关联",
+      "compareHistory": "成长历史",
+      "compareHistoryChatgpt": "每次都是新人",
+      "compareHistoryMe": "持续积累，看得见变化",
+      "compareLoop": "行动闭环",
+      "compareLoopChatgpt": "说了就忘",
+      "compareLoopMe": "行动卡+打卡，真正落地",
+      "compareStartup": "从0到1",
+      "compareStartupChatgpt": "给思路，不落地",
+      "compareStartupMe": "给方向+行动卡+案例",
+      "comparePrice": "价格",
+      "comparePriceChatgpt": "¥140/月",
+      "comparePriceMe": "免费开始，¥19.9/月全功能"
+    },
+    "steps": {
+      "title": "四步开启成长之旅",
+      "subtitle": "简单四步，开启你的自我探索之旅",
+      "step1Title": "记录碎片",
+      "step1Desc": "把日常生活中的经验、想法、反馈记下来，AI帮你提炼成结构化碎片",
+      "step2Title": "智能融合",
+      "step2Desc": "AI把你的碎片和人脉碎片融合，发现你没看见的能力",
+      "step3Title": "生成行动",
+      "step3Desc": "基于融合结果，生成可执行的行动卡，真正落地",
+      "step4Title": "持续迭代",
+      "step4Desc": "打卡记录进展，AI持续追踪，能力地图不断升级"
+    },
+    "map": {
+      "title": "行进地图",
+      "subtitle": "看得见自己的成长路径，每一步都算数",
+      "example": "示例：王老师的地图",
+      "exampleDesc": "王老师用了3个月，从碎片记录到能力变现",
+      "progress": "完成进度",
+      "progressTip": "每记录一个碎片，地图上就点亮一个格子",
+      "features": [
+        {
+          "icon": "🗺️",
+          "title": "可视化路径",
+          "desc": "能力成长一目了然"
+        },
+        {
+          "icon": "🏆",
+          "title": "里程碑",
+          "desc": "重要进展自动标记"
+        },
+        {
+          "icon": "🤝",
+          "title": "合拍地图",
+          "desc": "两人能力互补可视化"
+        }
+      ]
+    },
+    "case": {
+      "teacher": {
+        "title": "真实案例：王老师",
+        "subtitle": "看一个真实用户如何用拼拼看Me改变职业轨迹",
+        "persona": "\"我教了10年书，但总觉得自己的价值不止于此。\"",
+        "description": "王老师，35岁，初中语文老师，想发展副业但不知道从哪入手",
+        "fusionBefore": "融合前：碎片散落各处",
+        "beforeItem1": "教学心得记在笔记本上，很久没翻了",
+        "beforeItem2": "学生说她\"讲得好\"，但没当回事",
+        "beforeItem3": "想做知识付费，但不知道自己能教什么",
+        "fragmentsTitle": "碎片入库（AI提炼后）",
+        "fusionResult": "融合结果：发现隐藏能力",
+        "quote": "原来我最有价值的不是语文知识，是把复杂东西讲清楚的能力。",
+        "direction": "方向：把\"讲解能力\"产品化",
+        "evidence": [
+          "连续10年教学，学生评价\"听得懂\"",
+          "碎片中提到3次\"学生说我讲得好\"",
+          "有整理笔记的习惯（说明善于总结）",
+          "对\"知识付费\"感兴趣（说明有变现意识）"
+        ],
+        "actionCard": "行动卡（AI生成）",
+        "actions": [
+          "本周录制一条3分钟\"如何理解古诗词\"视频，发抖音",
+          "整理3个\"学生最爱听的语文知识点\"，做成PDF",
+          "在知识星球发一篇\"语文老师的认知觉醒\""
+        ],
+        "resultsTitle": "3个月后",
+        "results": [
+          "抖音涨粉3000+，第一条视频播放量12万",
+          "知识星球收入¥2300",
+          "有家长主动咨询\"如何帮孩子学语文\""
+        ],
+        "final": "王老师现在同时做：教学 + 抖音知识博主 + 知识星球",
+        "footnote": "她说：\"如果不是拼拼看Me，我可能还在笔记本上写心得。\""
+      },
+      "rider": {
+        "title": "案例：外卖骑手小李",
+        "fragments": "碎片",
+        "fragmentsDesc": "熟悉周边商家、善于规划路线、客户评价好",
+        "quote": "我发现我对这个片区比站长还熟。",
+        "direction": "方向：做本地生活向导 / 创业做同城配送",
+        "income": "小李现在税前月入¥12000+，正在筹划自己的配送团队"
+      },
+      "moreCases": {
+        "pending": "更多案例即将上线...",
+        "next": "产品经理、设计师、程序员、销售...你的行业也在路上"
+      }
+    },
+    "cta": {
+      "tagline": "你身上散落着很多碎片——来拼拼看Me，拼出一个你不知道的自己。",
+      "copyright": "© 2026 拼拼看Me. All rights reserved."
+    }
+  }
+}

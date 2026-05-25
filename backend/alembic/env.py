@@ -33,6 +33,7 @@ import models.habit  # noqa: F401
 import models.failure  # noqa: F401
 import models.feedback  # noqa: F401
 import models.fusion_diary  # noqa: F401
+import models.community  # noqa: F401
 
 target_metadata = Base.metadata
 

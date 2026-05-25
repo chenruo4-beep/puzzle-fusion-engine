@@ -3,6 +3,11 @@ import { View, Text, Button, ScrollView } from '@tarojs/components';
 import { getFragments, fuseFragments, Fragment, FusionResult } from '../../services/api';
 import './index.scss';
 
+export const config = {
+  enableShareAppMessage: true,
+  enableShareTimeline: true,
+};
+
 interface State {
   fragments: Fragment[];
   selected: number[];
@@ -21,6 +26,19 @@ export default class Fusion extends Component<object, State> {
     loading: true,
     fusing: false,
   };
+
+  onShareAppMessage() {
+    return {
+      title: '拼出人生方向 - 拼拼看Me',
+      path: '/pages/fusion/index',
+    };
+  }
+
+  onShareTimeline() {
+    return {
+      title: '拼出人生方向 - 拼拼看Me',
+    };
+  }
 
   componentDidShow() {
     this.loadFragments();
@@ -137,6 +155,9 @@ export default class Fusion extends Component<object, State> {
             )}
           </View>
         )}
+
+        {/* 分享按钮 */}
+        <Button className="share-btn" openType="share" style="margin-top:16px;">分享给朋友</Button>
       </View>
     );
   }

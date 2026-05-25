@@ -20,5 +20,16 @@ class User(Base):
     tier = Column(String(20), default="free", server_default="free")
     # 专业版试用到期时间（7天试用）
     trial_expires_at = Column(DateTime(timezone=True), nullable=True)
+
+    # ---------- Stripe 订阅字段 ----------
+    # Stripe 客户 ID（用户在 Stripe 的唯一标识）
+    stripe_customer_id = Column(String(255), nullable=True, unique=True)
+    # Stripe 订阅 ID（当前激活的订阅）
+    stripe_subscription_id = Column(String(255), nullable=True, unique=True)
+    # 订阅状态: active / past_due / canceled / trialing / incomplete / null
+    subscription_status = Column(String(50), nullable=True)
+    # 当前计费周期结束时间
+    subscription_current_period_end = Column(DateTime(timezone=True), nullable=True)
+
     # 创建时间
     created_at = Column(DateTime(timezone=True), server_default=func.now())

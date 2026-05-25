@@ -1,7 +1,12 @@
 import { Component } from 'react';
-import { View, Text, Navigator } from '@tarojs/components';
+import { View, Text, Navigator, Button } from '@tarojs/components';
 import { getToken, clearToken } from '../../services/api';
 import './index.scss';
+
+export const config = {
+  enableShareAppMessage: true,
+  enableShareTimeline: true,
+};
 
 interface State {
   loggedIn: boolean;
@@ -19,6 +24,19 @@ export default class Index extends Component<object, State> {
   handleLogout() {
     clearToken();
     this.setState({ loggedIn: false });
+  }
+
+  onShareAppMessage() {
+    return {
+      title: '拼拼看Me - 拼出更好的自己',
+      path: '/pages/index/index',
+    };
+  }
+
+  onShareTimeline() {
+    return {
+      title: '拼拼看Me - 拼出更好的自己',
+    };
   }
 
   render() {
@@ -90,6 +108,11 @@ export default class Index extends Component<object, State> {
           <Navigator url="/pages/fragments/index" className="nav-btn">🧩 我的碎片</Navigator>
           <Navigator url="/pages/fusion/index" className="nav-btn">✨ 碎片融合</Navigator>
           <Navigator url="/pages/checkin/index" className="nav-btn">✅ 打卡记录</Navigator>
+        </View>
+
+        {/* 分享按钮 */}
+        <View className="share-section">
+          <Button className="share-btn" openType="share">分享给朋友</Button>
         </View>
       </View>
     );

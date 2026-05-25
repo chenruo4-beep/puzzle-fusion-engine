@@ -30,6 +30,8 @@ async def list_fragments(
     from utils.response import paginated_response
 
     q = db.query(Fragment).filter(Fragment.user_id == current_user.id)
+    # 隐藏系统内部碎片类型（性格等），不暴露给用户
+    q = q.filter(Fragment.fragment_type != '性格')
     if archived_filter == "all":
         pass
     elif archived_filter == "1":
@@ -142,7 +144,7 @@ async def create_fragment(body: FragmentCreate, db: Session = Depends(get_db), c
     return success_response(fragment, "碎片创建成功", 201)
 
 
-@router.post("/batch-import", response_model=list[BatchImportPreviewItem])
+@router.post("/batch-import")
 async def batch_import_fragments(body: BatchImportRequest):
     """批量导入：粘贴文本→AI拆分为碎片预览"""
     fragments = await AIService.batch_import_fragments(body.text)
@@ -203,7 +205,7 @@ async def deduplicate_fragments(db: Session = Depends(get_db), current_user: Use
     """扫描相似碎片，返回候选去重对列表（同类型 bigram Jaccard > 0.6）"""
     import json
 
-    fragments = db.query(Fragment).filter(Fragment.user_id == current_user.id).all()
+    fragments = db.query(Fragment).filter(Fragment.user_id == current_user.id, Fragment.fragment_type != '性格').all()
 
     by_type: dict[str, list] = {}
     for f in fragments:
@@ -263,7 +265,7 @@ async def get_clusters(db: Session = Depends(get_db), current_user: User = Depen
     }
 
     fragments = db.query(Fragment).filter(
-        Fragment.user_id == current_user.id, Fragment.archived == 0
+        Fragment.user_id == current_user.id, Fragment.archived == 0, Fragment.fragment_type != '性格'
     ).all()
 
     if len(fragments) < 3:
@@ -459,7 +461,7 @@ async def get_gaps(db: Session = Depends(get_db), current_user: User = Depends(g
 
     # 获取所有活跃碎片
     fragments = db.query(Fragment).filter(
-        Fragment.user_id == current_user.id, Fragment.archived == 0
+        Fragment.user_id == current_user.id, Fragment.archived == 0, Fragment.fragment_type != '性格'
     ).all()
 
     # 按类型组织用户已有内容
@@ -609,7 +611,7 @@ async def guess_traits(db: Session = Depends(get_db), current_user: User = Depen
     from datetime import datetime, timedelta
 
     fragments = db.query(Fragment).filter(
-        Fragment.user_id == current_user.id, Fragment.archived == 0
+        Fragment.user_id == current_user.id, Fragment.archived == 0, Fragment.fragment_type != '性格'
     ).all()
 
     if len(fragments) < 3:
@@ -695,7 +697,7 @@ async def fragment_stats(db: Session = Depends(get_db), current_user: User = Dep
     from datetime import datetime
 
     fragments = db.query(Fragment).filter(
-        Fragment.user_id == current_user.id, Fragment.archived == 0
+        Fragment.user_id == current_user.id, Fragment.archived == 0, Fragment.fragment_type != '性格'
     ).all()
 
     types: dict[str, dict] = defaultdict(lambda: {"count": 0, "last_activated": None})

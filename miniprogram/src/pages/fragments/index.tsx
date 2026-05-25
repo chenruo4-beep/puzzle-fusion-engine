@@ -1,7 +1,12 @@
 import { Component } from 'react';
-import { View, Text, ScrollView } from '@tarojs/components';
+import { View, Text, ScrollView, Button } from '@tarojs/components';
 import { getFragments, Fragment } from '../../services/api';
 import './index.scss';
+
+export const config = {
+  enableShareAppMessage: true,
+  enableShareTimeline: true,
+};
 
 export default class Fragments extends Component {
   state = {
@@ -23,6 +28,19 @@ export default class Fragments extends Component {
     } finally {
       this.setState({ loading: false });
     }
+  }
+
+  onShareAppMessage() {
+    return {
+      title: '我的碎片 - 拼拼看Me',
+      path: '/pages/fragments/index',
+    };
+  }
+
+  onShareTimeline() {
+    return {
+      title: '我的碎片 - 拼拼看Me',
+    };
   }
 
   render() {
@@ -57,6 +75,9 @@ export default class Fragments extends Component {
             ))}
           </ScrollView>
         )}
+
+        {/* 分享按钮 */}
+        <Button className="share-btn" openType="share" style="margin-top:16px;">分享给朋友</Button>
       </View>
     );
   }

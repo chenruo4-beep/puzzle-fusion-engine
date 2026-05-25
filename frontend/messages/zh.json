@@ -1,0 +1,157 @@
+{
+  "landing": {
+    "hero": {
+      "title": "把你做过的事，拼成你的下一步",
+      "subtitle": "你已有的碎片，藏着你想不到的方向",
+      "cta": "看看我的碎片能拼出什么"
+    },
+    "journey": {
+      "title": "你不需要更多能力，你需要的是看见。",
+      "subtitle": "把你已有的碎片拼在一起，Me帮你看看——能拼出什么你想不到的方向。",
+      "selfTitle": "先拼自己",
+      "selfDesc": "把你的碎片放进来，Me告诉你这些碎片指向什么方向。不是算命，是把你已经有的东西摆出来看看。",
+      "selfCta": "看看我的碎片能拼出什么",
+      "tags": {
+        "fragment": "碎片入库",
+        "fusion": "AI融合",
+        "action": "行动闭环"
+      },
+      "coCreateReady1": "你的碎片已经足够拼出一幅自画像了。要不要找个人，看看你们能拼出什么？",
+      "coCreateReady2": "有些方向，一个人看不完整。也许，值得找人共同看看。",
+      "coCreateReady3": "当你准备好与另一个人同行，两段旅途可以在这里交汇。"
+    },
+    "processValue": {
+      "title": "不必等到「拼完」才看到方向",
+      "desc": "每次融合，Me都会给你一个具体的下一步。不是鸡汤，是今天就能做的事。",
+      "quote": "老师不觉得自己能卖课，骑手不觉得自己会拍视频——Me帮你看见，你已经拥有的。"
+    },
+    "different": {
+      "title": "AI遍地都是，缺的是把你的碎片记住的人",
+      "subtitle": "通用AI聊完就忘。Me记住你的每一块碎片，越拼越准。",
+      "compareItem": "对比项",
+      "compareChatgpt": "ChatGPT",
+      "compareMe": "拼拼看Me",
+      "compareFragments": "碎片管理",
+      "compareFragmentsChatgpt": "❌ 每次重新输入",
+      "compareFragmentsMe": "✅ 碎片永久保存，越积越多",
+      "compareHistory": "融合历史",
+      "compareHistoryChatgpt": "❌ 没有",
+      "compareHistoryMe": "✅ 3个月成长轨迹可视化",
+      "compareLoop": "行动闭环",
+      "compareLoopChatgpt": "❌ 给完方案就结束",
+      "compareLoopMe": "✅ 打卡→反馈→新碎片→再融合",
+      "compareStartup": "冷启动",
+      "compareStartupChatgpt": "❌ 不知道输入什么",
+      "compareStartupMe": "✅ 选个职业就有预设碎片",
+      "comparePrice": "定价",
+      "comparePriceChatgpt": "❌ $20/月",
+      "comparePriceMe": "✅ 免费25次/月"
+    },
+    "case": {
+      "teacher": {
+        "title": "老师王姐没学新东西，月收入多了 4000",
+        "subtitle": "她只是把每天都在做的事，拼在了一起。",
+        "persona": "王姐，38岁，三线城市初中语文老师，教龄12年",
+        "tagline": "你每天都在用的能力，可能就是别人愿意付费的技能。",
+        "tagline2": "不需要学新东西。你已有的，就够了。",
+        "description": "月薪4500，暑假2个月空闲，觉得这辈子就这样了",
+        "fusionBefore": "融合前",
+        "beforeItem1": "每天重复备课上课改作业，觉得自己的能力不值钱",
+        "beforeItem2": "朋友圈发过几条读书笔记，有人点赞但没人付费",
+        "beforeItem3": "想：我就会讲课，这能卖什么？",
+        "fragmentsTitle": "碎片入库",
+        "fragments": [
+          { "emoji": "🧩", "text": "课程设计（12年教案）" },
+          { "emoji": "🧩", "text": "公开演讲（从不怯场）" },
+          { "emoji": "🧩", "text": "PPT制作（同事抢着借模板）" },
+          { "emoji": "❤️", "text": "读书笔记（朋友圈日更3年）" },
+          { "emoji": "⚡", "text": "耐心倾听（家长爱找她聊天）" },
+          { "emoji": "📚", "text": "辅导邻居孩子作文提15分" }
+        ],
+        "fusionResult": "融合结果",
+        "quote": "你早就会讲课了，只是还没学会给自己定价。",
+        "direction": "暑假作文陪跑营 + 读书笔记IP + 家长沟通咨询",
+        "evidence": [
+          "你有课程设计能力：做一套7天作文速成完全没问题",
+          "你有公开演讲经验：录网课根本不是事",
+          "你有读书笔记习惯：小红书/公众号天然素材",
+          "你有耐心倾听：家长付费咨询，你比心理老师还管用"
+        ],
+        "actionCard": "行动卡",
+        "actions": [
+          "本周：把朋友圈最好的5条读书笔记发到小红书，测试流量",
+          "下周：用你的PPT模板做一套7天作文速成大纲",
+          "暑假前：在小红书发作文陪跑营招募帖，定价299/人"
+        ],
+        "resultsTitle": "结果",
+        "results": [
+          "第一个月小红书发了20条读书笔记，涨粉800",
+          "暑假开了第一期作文陪跑营，8个学生，收入2392"
+        ],
+        "final": "每月课外收入¥2000-4000，暑假能翻倍",
+        "footnote": "用的还是她每天都在做的事——讲课、读书、聊天",
+        "tagline": "你每天都在用的能力，可能就是别人愿意付费的技能。",
+        "tagline2": "不需要学新东西。你已有的，就够了。"
+      },
+      "rider": {
+        "title": "🛵 外卖骑手小李",
+        "quote": "你跑过的每一单，都是别人拍不出来的内容。",
+        "direction": "方向：外卖视角探店 + 奇葩订单故事系列",
+        "income": "月均多赚¥800-1500",
+        "fragments": "碎片",
+        "fragmentsDesc": "熟悉城市路线 + 会修电动车 + 每天刷短视频3小时 + 奇葩订单经历"
+      },
+      "moreCases": {
+        "pending": "更多案例更新中...",
+        "next": "下一个可能就是你"
+      }
+    },
+    "steps": {
+      "title": "怎么拼？",
+      "subtitle": "四步循环。每一步都不难，难的是你一直没看见自己有什么。",
+      "step1Title": "1. 碎片入库",
+      "step1Desc": "你会什么、喜欢什么、别人老找你帮什么——记下来。AI自动分类。",
+      "step2Title": "2. AI融合",
+      "step2Desc": "把你的碎片拼在一起，Me告诉你能拼出什么方向。不是鸡汤，是具体建议。",
+      "step3Title": "3. 迈出第一步",
+      "step3Desc": "每个方向配一个今天就能做的具体动作。不是说教，是具体的可操作的事。",
+      "step4Title": "4. 反馈迭代",
+      "step4Desc": "做了之后回来告诉Me结果，新的碎片进来，下次融合更准确。"
+    },
+    "map": {
+      "title": "拼到哪一步了？地图上看得见",
+      "subtitle": "每个方向生成一张行进地图。不是画饼，是每一步都标好了。",
+      "example": "示例：老师王姐的行进地图",
+      "exampleDesc": "作文提分训练营 → 知识付费",
+      "progress": "进度",
+      "progressTip": "点击任意节点查看具体行动步骤，拖拽调整进度",
+      "features": [
+        { "icon": "🗺️", "title": "可视化路线", "desc": "5步路线图，每步都有具体行动" },
+        { "icon": "📍", "title": "地标建筑", "desc": "每个步骤都是一座建筑，有独特图标" },
+        { "icon": "🚶", "title": "3D小人", "desc": "实时显示你走到哪一步" }
+      ]
+    },
+    "fragmentMessages": {
+      "enough": "—— 足够看到一些轮廓了",
+      "keepCollecting": "，继续收集",
+      "ready1": "你的碎片已经足够拼出一幅自画像了。要不要找个人，看看你们能拼出什么？",
+      "ready2": "有些方向，一个人看不完整。也许，值得找人共同看看。",
+      "ready3": "当你准备好与另一个人同行，两段旅途可以在这里交汇。",
+      "coAction": "继续我们的旅途 →",
+      "exploreAction": "去看看合拍 →"
+    },
+    "cta": {
+      "tagline": "你做过的事，藏着你的下一步。",
+      "copyright": "© 2026 拼拼看Me | 把你做过的事，拼成你的下一步"
+    },
+    "langSwitch": "EN"
+  },
+  "nav": {
+    "login": "登录",
+    "dashboard": "控制台"
+  },
+  "footer": {
+    "privacy": "隐私政策",
+    "terms": "服务条款"
+  }
+}

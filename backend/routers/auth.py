@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from database import get_db
 from models.user import User
@@ -21,7 +21,7 @@ ALGORITHM = "HS256"
 
 def create_access_token(user_id: int, email: str, onboarded: bool = False) -> str:
     """生成 JWT access token（7天有效）"""
-    expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     payload = {"sub": str(user_id), "email": email, "onboarded": onboarded, "exp": expire}
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
 
@@ -40,8 +40,8 @@ def get_current_user(
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
     db: Session = Depends(get_db),
 ) -> User:
-    """获取当前登录用户。支持 Bearer token（新）和 X-User-Id header（过渡期）。"""
-    # 模式1: JWT Bearer token
+    """获取当前登录用户。支持 Bearer token（新）和 X-User-Id header（仅开发环境）。"""
+    # 模式1: JWT Bearer token（推荐）
     if authorization and authorization.startswith("Bearer "):
         token = authorization.replace("Bearer ", "")
         payload = verify_access_token(token)
@@ -51,8 +51,13 @@ def get_current_user(
                 return user
         raise HTTPException(status_code=401, detail="登录已过期，请重新登录")
 
-    # 模式2: X-User-Id header（过渡期兼容）
+    # 模式2: X-User-Id header（仅开发环境允许，生产环境禁用）
     if x_user_id is not None:
+        if not settings.ALLOW_USER_ID_HEADER:
+            raise HTTPException(
+                status_code=401,
+                detail="X-User-Id 认证方式已在生产环境禁用，请使用 Bearer token",
+            )
         user = db.query(User).filter(User.id == int(x_user_id)).first()
         if user:
             return user

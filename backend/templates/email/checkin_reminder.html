@@ -1,0 +1,14 @@
+{% extends "email/base.html" %}
+{% block content %}
+<span class="emoji">🌅</span>
+<p style="font-size: 18px; font-weight: 600; margin-top: 0; text-align: center;">早安！新的一天等你打卡</p>
+<p>早上好！</p>
+<p>
+  每一天都是独一无二的拼图碎片。<br>
+  花一分钟记录今天的感受，让拼图慢慢完整。
+</p>
+<p style="text-align: center;">
+  <a href="{{ settings.FRONTEND_URL }}/checkin" class="btn">☀️ 立即打卡</a>
+</p>
+<p class="muted" style="text-align: center;">已有 <strong>{{ streak_days }}</strong> 天连续打卡，继续保持！</p>
+{% endblock %}

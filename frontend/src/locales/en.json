@@ -1,0 +1,158 @@
+{
+  "landing": {
+    "hero": {
+      "title": "Puzzle Fusion Engine\nUnlock Your Potential",
+      "subtitle": "A new way to learn, create, and grow.",
+      "cta": "Get Started",
+      "choose_profession": "Choose your profession, complete onboarding in 2 minutes"
+    },
+    "common": {
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "view": "View"
+    },
+    "journey": {
+      "title": "Your Journey",
+      "subtitle": "Everyone has their own growth path. PuzzleMe helps you see it.",
+      "selfTitle": "My Journey",
+      "selfDesc": "Log fragments, fuse experiences, generate action cards — your growth, all in one view.",
+      "selfCta": "Start My Journey",
+      "tags": {
+        "fragment": "Fragments",
+        "fusion": "Fusion",
+        "action": "Action"
+      },
+      "coCreateReady1": "You have enough fragments! Try Co-Creation!",
+      "coCreateReady2": "Quite a few fragments. Want to collaborate?",
+      "coCreateReady3": "Keep collecting. 8+ fragments to unlock Co-Creation."
+    },
+    "fragmentMessages": {
+      "enough": "— enough for a fusion!",
+      "keepCollecting": "— keep collecting, more is better",
+      "coAction": "View My Co-Creation",
+      "exploreAction": "Explore Co-Creation"
+    },
+    "processValue": {
+      "title": "Process IS Value",
+      "desc": "PuzzleMe is not just a tool, it's a process. When you start logging fragments and reflecting on experiences, change is already happening.",
+      "quote": "What matters is not what you piece together, but what you discover in the process."
+    },
+    "different": {
+      "title": "Why PuzzleMe is Different",
+      "subtitle": "We're not just another chatbot. We're your growth partner.",
+      "compareItem": "Comparison",
+      "compareChatgpt": "ChatGPT",
+      "compareMe": "PuzzleMe",
+      "compareFragments": "Fragment Logging",
+      "compareFragmentsChatgpt": "Forget after chat",
+      "compareFragmentsMe": "Persistent, smart association",
+      "compareHistory": "Growth History",
+      "compareHistoryChatgpt": "New every time",
+      "compareHistoryMe": "Continuous accumulation, visible change",
+      "compareLoop": "Action Loop",
+      "compareLoopChatgpt": "Say and forget",
+      "compareLoopMe": "Action cards + check-in, real execution",
+      "compareStartup": "0-to-1 Startup",
+      "compareStartupChatgpt": "Ideas, no execution",
+      "compareStartupMe": "Direction + action cards + case studies",
+      "comparePrice": "Price",
+      "comparePriceChatgpt": "$20/mo",
+      "comparePriceMe": "Free to start, $2.99/mo full features"
+    },
+    "steps": {
+      "title": "4 Steps to Start Your Growth Journey",
+      "subtitle": "Simple 4 steps to begin your self-exploration journey",
+      "step1Title": "Log Fragments",
+      "step1Desc": "Record experiences, ideas, and feedback from daily life. AI helps extract structured fragments.",
+      "step2Title": "Smart Fusion",
+      "step2Desc": "AI fuses your fragments with others' to discover capabilities you didn't see.",
+      "step3Title": "Generate Action",
+      "step3Desc": "Based on fusion results, generate executable action cards for real implementation.",
+      "step4Title": "Continuous Iteration",
+      "step4Desc": "Check-in to record progress. AI continuously tracks. Capability map keeps upgrading."
+    },
+    "map": {
+      "title": "Journey Map",
+      "subtitle": "See your growth path. Every step counts.",
+      "example": "Example: Teacher Wang's Map",
+      "exampleDesc": "Teacher Wang used it for 3 months, from fragment logging to capability monetization.",
+      "progress": "Progress",
+      "progressTip": "Every fragment logged lights up a grid on the map.",
+      "features": [
+        {
+          "icon": "🗺️",
+          "title": "Visual Path",
+          "desc": "Capability growth at a glance"
+        },
+        {
+          "icon": "🏆",
+          "title": "Milestones",
+          "desc": "Important progress auto-tagged"
+        },
+        {
+          "icon": "🤝",
+          "title": "Co-Creation Map",
+          "desc": "Visualize complementary capabilities"
+        }
+      ]
+    },
+    "case": {
+      "teacher": {
+        "title": "Real Case: Teacher Wang",
+        "subtitle": "See how a real user transformed their career path with PuzzleMe",
+        "persona": "\"I've been teaching for 10 years, but I always felt my value was more than this.\"",
+        "description": "Teacher Wang, 35, middle school Chinese teacher, wants to develop a side business but doesn't know where to start.",
+        "fusionBefore": "Before Fusion: Fragments scattered everywhere",
+        "beforeItem1": "Teaching insights written in notebook, haven't looked at it in ages",
+        "beforeItem2": "Students say she 'explains well' but didn't think much of it",
+        "beforeItem3": "Wants to do knowledge monetization but doesn't know what to teach",
+        "fragmentsTitle": "Fragments Ingested (after AI extraction)",
+        "fusionResult": "Fusion Result: Hidden capabilities discovered",
+        "quote": "Turns out my most valuable asset isn't Chinese knowledge, it's the ability to explain complex things clearly.",
+        "direction": "Direction: Productize 'explanation capability'",
+        "evidence": [
+          "10 years of teaching, students evaluate 'easy to understand'",
+          "Mentioned 3 times in fragments: 'students say I explain well'",
+          "Habit of organizing notes (indicates strong summarization skills)",
+          "Interested in 'knowledge monetization' (indicates monetization awareness)"
+        ],
+        "actionCard": "Action Card (AI-generated)",
+        "actions": [
+          "This week: Record a 3-min video 'How to Understand Ancient Poetry', post on TikTok",
+          "Organize 3 'Chinese knowledge points students love most', make into PDF",
+          "Post 'Chinese Teacher's Cognitive Awakening' on Knowledge Planet"
+        ],
+        "resultsTitle": "3 months later",
+        "results": [
+          "TikTok gained 3000+ followers, first video 120k views",
+          "Knowledge Planet income: ¥2300",
+          "Parents actively consulting 'how to help kids learn Chinese'"
+        ],
+        "final": "Teacher Wang now does: Teaching + TikTok knowledge creator + Knowledge Planet",
+        "footnote": "She says: 'If not for PuzzleMe, I'd probably still be writing insights in my notebook.'"
+      },
+      "rider": {
+        "title": "Case: Delivery Rider Xiao Li",
+        "fragments": "Fragments",
+        "fragmentsDesc": "Familiar with nearby restaurants, good at route planning, positive customer reviews",
+        "quote": "I realized I know this area better than the station manager.",
+        "direction": "Direction: Local life guide / Start own delivery business",
+        "income": "Xiao Li now earns ¥12000+ pre-tax, planning his own delivery team"
+      },
+      "moreCases": {
+        "pending": "More cases coming soon...",
+        "next": "Product managers, designers, programmers, sales... your industry is on the way"
+      }
+    },
+    "cta": {
+      "tagline": "You have many fragments scattered about you — come to PuzzleMe and piece together a self you didn't know.",
+      "copyright": "© 2026 PuzzleMe. All rights reserved."
+    }
+  }
+}

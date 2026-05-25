@@ -1,0 +1,22 @@
+{% extends "email/base.html" %}
+{% block content %}
+<span class="emoji">{{ emoji }}</span>
+<p style="font-size: 18px; font-weight: 600; margin-top: 0; text-align: center;">🎉 {{ title }}</p>
+<p>太棒了！</p>
+<p>{{ message }}</p>
+
+{% if extra_stats %}
+<table class="stats">
+  <tr>
+    {% for key, value in extra_stats.items() %}
+    <td><div class="num">{{ value }}</div><div class="label">{{ key }}</div></td>
+    {% endfor %}
+  </tr>
+</table>
+{% endif %}
+
+<p style="text-align: center;">
+  <a href="{{ settings.FRONTEND_URL }}" class="btn">去看看</a>
+</p>
+<p class="muted" style="text-align: center;">每一步都在拼出更完整的自己 🧩</p>
+{% endblock %}

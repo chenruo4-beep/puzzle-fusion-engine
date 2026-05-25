@@ -292,3 +292,115 @@ def user_profile(current_user: User = Depends(get_current_user), db: Session = D
         },
         "top_strengths": top_types,
     }
+
+
+@router.get("/user-dashboard")
+def user_dashboard(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """高级分析仪表盘：时间线、类型分布、活跃热力图、增长趋势"""
+    user_id = current_user.id
+    now = datetime.utcnow()
+
+    # ── 1. 按月统计碎片/融合/日记增长 ──────────────────
+    six_months_ago = now - timedelta(days=180)
+    months_raw = db.query(
+        sql_func.strftime('%Y-%m', Fragment.created_at).label('month'),
+        sql_func.count(Fragment.id).label('fragments')
+    ).filter(Fragment.user_id == user_id, Fragment.created_at >= six_months_ago
+    ).group_by(sql_func.strftime('%Y-%m', Fragment.created_at)).all()
+
+    fusion_months = db.query(
+        sql_func.strftime('%Y-%m', Fusion.created_at).label('month'),
+        sql_func.count(Fusion.id).label('fusions')
+    ).filter(Fusion.user_id == user_id, Fusion.created_at >= six_months_ago
+    ).group_by(sql_func.strftime('%Y-%m', Fusion.created_at)).all()
+
+    journal_months = db.query(
+        sql_func.strftime('%Y-%m', JournalEntry.created_at).label('month'),
+        sql_func.count(JournalEntry.id).label('journals')
+    ).filter(JournalEntry.user_id == user_id, JournalEntry.created_at >= six_months_ago
+    ).group_by(sql_func.strftime('%Y-%m', JournalEntry.created_at)).all()
+
+    # 合并成统一时间线
+    all_months = sorted(set(
+        [r.month for r in months_raw] +
+        [r.month for r in fusion_months] +
+        [r.month for r in journal_months]
+    ))
+    frag_map = {r.month: r.fragments for r in months_raw}
+    fus_map = {r.month: r.fusions for r in fusion_months}
+    jour_map = {r.month: r.journals for r in journal_months}
+
+    timeline = [
+        {
+            "month": m,
+            "fragments": frag_map.get(m, 0),
+            "fusions": fus_map.get(m, 0),
+            "journals": jour_map.get(m, 0),
+        }
+        for m in all_months
+    ]
+
+    # ── 2. 碎片类型分布 ──────────────────────────────────
+    type_dist = db.query(
+        Fragment.fragment_type, sql_func.count(Fragment.id).label('cnt')
+    ).filter(Fragment.user_id == user_id, Fragment.archived == 0
+    ).group_by(Fragment.fragment_type
+    ).order_by(sql_func.count(Fragment.id).desc()).all()
+
+    fragment_type_distribution = [{"type": t, "count": c} for t, c in type_dist]
+
+    # ── 3. 每周活跃热力图（过去12周） ────────────────────
+    twelve_weeks_ago = now - timedelta(weeks=12)
+    # 合并所有活动时间
+    frag_dates = db.query(Fragment.created_at.label('dt')).filter(
+        Fragment.user_id == user_id, Fragment.created_at >= twelve_weeks_ago
+    ).all()
+    fus_dates = db.query(Fusion.created_at.label('dt')).filter(
+        Fusion.user_id == user_id, Fusion.created_at >= twelve_weeks_ago
+    ).all()
+    jour_dates = db.query(JournalEntry.created_at.label('dt')).filter(
+        JournalEntry.user_id == user_id, JournalEntry.created_at >= twelve_weeks_ago
+    ).all()
+    checkin_dates = db.query(CheckIn.completed_at.label('dt')).filter(
+        CheckIn.user_id == user_id, CheckIn.completed_at >= twelve_weeks_ago, CheckIn.status == 'completed'
+    ).all()
+
+    from collections import Counter
+    date_counter: Counter[str] = Counter()
+    for d in frag_dates + fus_dates + jour_dates + checkin_dates:
+        if d.dt:
+            date_counter[d.dt.strftime('%Y-%m-%d')] += 1
+
+    activity_heatmap = [{"date": dt, "count": cnt} for dt, cnt in sorted(date_counter.items())]
+
+    # ── 4. 关键指标 ─────────────────────────────────────
+    total_fragments = db.query(Fragment).filter(Fragment.user_id == user_id, Fragment.archived == 0).count()
+    total_fusions = db.query(Fusion).filter(Fusion.user_id == user_id).count()
+    total_journals = db.query(JournalEntry).filter(JournalEntry.user_id == user_id).count()
+    total_checkins = db.query(CheckIn).filter(CheckIn.user_id == user_id, CheckIn.status == 'completed').count()
+
+    # 融合率 = 融合数 / 碎片数（每个碎片被融合的概率）
+    fusion_rate = round((total_fusions / total_fragments * 100) if total_fragments > 0 else 0, 1)
+
+    # 7日活跃度
+    seven_days_ago = now - timedelta(days=7)
+    weekly_active = len([dt for dt in date_counter if dt >= seven_days_ago.strftime('%Y-%m-%d')])
+
+    # 平均每日活动（过去30天有活动的天数）
+    thirty_days_ago = now - timedelta(days=30)
+    active_days_30 = len([dt for dt in date_counter if dt >= thirty_days_ago.strftime('%Y-%m-%d')])
+
+    return {
+        "key_metrics": {
+            "total_fragments": total_fragments,
+            "total_fusions": total_fusions,
+            "total_journals": total_journals,
+            "total_checkins": total_checkins,
+            "fusion_rate": fusion_rate,
+            "weekly_active_days": weekly_active,
+            "active_days_30": active_days_30,
+        },
+        "timeline": timeline,
+        "fragment_type_distribution": fragment_type_distribution,
+        "activity_heatmap": activity_heatmap,
+    }

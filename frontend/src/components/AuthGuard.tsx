@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from "@/i18n/navigation";
 import { getToken, parseJWT } from '@/lib/api';
 
 const PUBLIC_PATHS = ['/', '/login', '/register', '/onboarding/welcome', '/onboarding/profession', '/onboarding/setup', '/onboarding/vision', '/onboarding/confirm-fragments', '/miniprogram-landing'];

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>拼拼看Me - 离线状态</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      padding: 20px;
+    }
+    
+    .container {
+      text-align: center;
+      max-width: 500px;
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+    
+    h1 {
+      font-size: 32px;
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+    
+    p {
+      font-size: 18px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+      opacity: 0.9;
+    }
+    
+    .tips {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      text-align: left;
+    }
+    
+    .tips h2 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+    
+    .tips ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    
+    .tips li {
+      padding: 8px 0;
+      padding-left: 24px;
+      position: relative;
+    }
+    
+    .tips li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #4ade80;
+      font-weight: bold;
+    }
+    
+    button {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    button:active {
+      transform: translateY(0px);
+    }
+    
+    .cached-pages {
+      margin-top: 30px;
+      text-align: left;
+    }
+    
+    .cached-pages h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      opacity: 0.9;
+    }
+    
+    .page-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .page-item {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .page-item:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🧩</div>
+    <h1>离线状态</h1>
+    <p>当前网络不可用，但你可以继续使用已缓存的功能</p>
+    
+    <div class="tips">
+      <h2>你可以：</h2>
+      <ul>
+        <li>查看已访问过的页面</li>
+        <li>继续使用已加载的拼图</li>
+        <li>查看本地保存的数据</li>
+      </ul>
+    </div>
+    
+    <button onclick="retryConnection()">重试连接</button>
+    
+    <div class="cached-pages" id="cachedPages" style="display: none;">
+      <h3>已缓存的页面：</h3>
+      <div class="page-list" id="pageList"></div>
+    </div>
+  </div>
+  
+  <script>
+    // 重试连接
+    function retryConnection() {
+      if (navigator.onLine) {
+        window.location.reload();
+      } else {
+        alert('仍然无法连接到网络，请检查你的网络连接');
+      }
+    }
+    
+    // 监听网络状态
+    window.addEventListener('online', () => {
+      console.log('[Offline] 网络已恢复');
+      window.location.reload();
+    });
+    
+    // 显示已缓存的页面
+    async function showCachedPages() {
+      if ('caches' in window) {
+        const cache = await caches.open('puzzle-dynamic-v1');
+        const requests = await cache.keys();
+        
+        if (requests.length > 0) {
+          const cachedPages = document.getElementById('cachedPages');
+          const pageList = document.getElementById('pageList');
+          
+          requests.forEach(request => {
+            const url = new URL(request.url);
+            if (url.pathname !== '/' && !url.pathname.includes('.')) {
+              const pageItem = document.createElement('div');
+              pageItem.className = 'page-item';
+              pageItem.textContent = url.pathname;
+              pageItem.onclick = () => window.location.href = url.pathname;
+              pageList.appendChild(pageItem);
+            }
+          });
+          
+          cachedPages.style.display = 'block';
+        }
+      }
+    }
+    
+    showCachedPages();
+    
+    // 注册 Service Worker (如果在离线页面但没有注册)
+    if ('serviceWorker' in navigator && !navigator.serviceWorker.controller) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('[Offline] Service Worker 注册成功'))
+        .catch(err => console.error('[Offline] Service Worker 注册失败:', err));
+    }
+  </script>
+</body>
+</html>

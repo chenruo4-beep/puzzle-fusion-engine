@@ -23,6 +23,8 @@ export interface Inspiration {
 interface Props {
   inspirations: Inspiration[];
   onDelete: (id: string) => void;
+  onConvertToFragment?: (insp: Inspiration) => void;
+  onUseForFusion?: (insp: Inspiration) => void;
 }
 
 /* ---------- 工具函数 ---------- */
@@ -41,7 +43,7 @@ function formatDate(iso: string): string {
 }
 
 /* ---------- 组件 ---------- */
-export default function InspirationsList({ inspirations, onDelete }: Props) {
+export default function InspirationsList({ inspirations, onDelete, onConvertToFragment, onUseForFusion }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopy = async (text: string, id: string) => {
@@ -153,6 +155,22 @@ export default function InspirationsList({ inspirations, onDelete }: Props) {
               >
                 {copiedId === insp.id ? '✅ 已复制' : '📋 复制'}
               </button>
+              {onConvertToFragment && (
+                <button
+                  onClick={() => onConvertToFragment(insp)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-green-500 hover:underline"
+                >
+                  🧩 转碎片
+                </button>
+              )}
+              {onUseForFusion && (
+                <button
+                  onClick={() => onUseForFusion(insp)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-500 hover:underline"
+                >
+                  🔥 去融合
+                </button>
+              )}
               <button
                 onClick={() => onDelete(insp.id)}
                 className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-600"

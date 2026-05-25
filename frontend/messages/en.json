@@ -1,0 +1,157 @@
+{
+  "landing": {
+    "hero": {
+      "title": "Turn What You've Done Into Your Next Step",
+      "subtitle": "Your existing fragments hide directions you haven't imagined",
+      "cta": "See what my fragments can build"
+    },
+    "journey": {
+      "title": "You don't need more skills. You need to see what you already have.",
+      "subtitle": "Put your fragments together — Me helps you discover directions you never thought of.",
+      "selfTitle": "Start with yourself",
+      "selfDesc": "Drop in your fragments. Me shows you directions they point to. Not fortune-telling — just laying out what you already have.",
+      "selfCta": "See what my fragments can build",
+      "tags": {
+        "fragment": "Fragment Collection",
+        "fusion": "AI Fusion",
+        "action": "Action Loop"
+      },
+      "coCreateReady1": "Your fragments are enough to paint a self-portrait. Want to find someone to see what you two can build together?",
+      "coCreateReady2": "Some directions need another pair of eyes. Maybe worth co-creating.",
+      "coCreateReady3": "When you're ready to walk with someone, two journeys can meet here."
+    },
+    "processValue": {
+      "title": "You don't have to wait until it's 'complete' to see the direction",
+      "desc": "Every fusion gives you a concrete next step. Not motivational quotes — something you can do today.",
+      "quote": "Teachers don't think they can sell courses, delivery riders don't think they can make videos — Me helps you see what you already possess."
+    },
+    "different": {
+      "title": "AI is everywhere. What's missing is someone who remembers your fragments.",
+      "subtitle": "Generic AI forgets after each chat. Me remembers every fragment — the more you add, the sharper it gets.",
+      "compareItem": "Feature",
+      "compareChatgpt": "ChatGPT",
+      "compareMe": "PuzzleMe",
+      "compareFragments": "Fragment Management",
+      "compareFragmentsChatgpt": "❌ Start from scratch every time",
+      "compareFragmentsMe": "✅ Fragments saved permanently, grow over time",
+      "compareHistory": "Fusion History",
+      "compareHistoryChatgpt": "❌ None",
+      "compareHistoryMe": "✅ 3-month growth trajectory visualization",
+      "compareLoop": "Action Loop",
+      "compareLoopChatgpt": "❌ Gives a plan and stops",
+      "compareLoopMe": "✅ Check-in → feedback → new fragment → re-fuse",
+      "compareStartup": "Cold Start",
+      "compareStartupChatgpt": "❌ No idea what to input",
+      "compareStartupMe": "✅ Pick a profession, get preset fragments",
+      "comparePrice": "Pricing",
+      "comparePriceChatgpt": "❌ $20/month",
+      "comparePriceMe": "✅ Free: 25 fusions/month"
+    },
+    "case": {
+      "teacher": {
+        "title": "Teacher Wang didn't learn anything new — her monthly income increased by ¥4000",
+        "subtitle": "She just pieced together what she was already doing every day.",
+        "persona": "Wang, 38, middle school Chinese teacher in a third-tier city, 12 years teaching",
+        "description": "Monthly salary ¥4500, 2 months free in summer, thinks this is all there is",
+        "tagline": "The skills you use every day might be what others will pay for.",
+        "tagline2": "No new skills needed. What you have is enough.",
+        "fusionBefore": "Before Fusion",
+        "beforeItem1": "Repeating lesson prep, teaching, grading — feels her skills are worthless",
+        "beforeItem2": "Posted reading notes on WeChat, got likes but no one paid",
+        "beforeItem3": "Thinks: I just know how to teach — what can I possibly sell?",
+        "fragmentsTitle": "Fragments Collected",
+        "fragments": [
+          { "emoji": "🧩", "text": "Curriculum design (12 years of lesson plans)" },
+          { "emoji": "🧩", "text": "Public speaking (never stage fright)" },
+          { "emoji": "🧩", "text": "PPT creation (colleagues always borrow her templates)" },
+          { "emoji": "❤️", "text": "Reading notes (daily posts for 3 years)" },
+          { "emoji": "⚡", "text": "Patient listening (parents love chatting with her)" },
+          { "emoji": "📚", "text": "Tutoring neighbor's kid: essay score improved 15 points" }
+        ],
+        "fusionResult": "Fusion Result",
+        "quote": "You've always known how to teach — you just haven't learned to price yourself yet.",
+        "direction": "Summer Essay Training Camp + Reading Notes IP + Parent Communication Consulting",
+        "evidence": [
+          "You have curriculum design skills: a '7-Day Essay Mastery' course is absolutely doable",
+          "You have public speaking experience: recording online courses is no problem",
+          "You have a reading notes habit: natural content for Xiaohongshu/WeChat Official Account",
+          "You have patient listening: parents will pay for consulting — you're more effective than a psychologist"
+        ],
+        "actionCard": "Action Card",
+        "actions": [
+          "This week: Post your best 5 reading notes to Xiaohongshu, test the traffic",
+          "Next week: Use your PPT template to draft a '7-Day Essay Mastery' outline",
+          "Before summer: Post recruitment for 'Essay Training Camp' on Xiaohongshu, price at ¥299/person"
+        ],
+        "resultsTitle": "Results",
+        "results": [
+          "First month: 20 reading notes posted, gained 800 followers",
+          "Summer: first session of Essay Training Camp, 8 students, ¥2392 revenue"
+        ],
+        "final": "¥2000-4000/month extra income, doubles in summer",
+        "footnote": "Using exactly what she was doing every day — teaching, reading, chatting",
+        "tagline": "The skills you use every day might be what others will pay for.",
+        "tagline2": "No new skills needed. What you have is enough."
+      },
+      "rider": {
+        "title": "🛵 Delivery Rider Xiao Li",
+        "quote": "Every delivery you run is content nobody else can film.",
+        "direction": "Delivery-Worker Food Reviews + Weird Order Story Series",
+        "income": "¥800-1500/month extra",
+        "fragments": "Fragments",
+        "fragmentsDesc": "Knows city routes + Can fix e-bikes + Watches short videos 3h/day + Weird order stories"
+      },
+      "moreCases": {
+        "pending": "More cases coming soon...",
+        "next": "The next one could be you"
+      }
+    },
+    "steps": {
+      "title": "How does it work?",
+      "subtitle": "A four-step loop. Each step is simple — the hard part was never seeing what you had.",
+      "step1Title": "1. Collect Fragments",
+      "step1Desc": "What you can do, what you love, what people always ask your help with — write it down. AI auto-categorizes.",
+      "step2Title": "2. AI Fusion",
+      "step2Desc": "Put your fragments together. Me tells you what directions they can form. Not fluff — concrete suggestions.",
+      "step3Title": "3. Take the First Step",
+      "step3Desc": "Every direction comes with a specific action you can do today. Not lectures — real, actionable steps.",
+      "step4Title": "4. Iterate",
+      "step4Desc": "Come back with results. New fragments come in. Next fusion gets sharper."
+    },
+    "map": {
+      "title": "See exactly where you are on the journey",
+      "subtitle": "Every direction generates a journey map. Not empty promises — every step is labeled.",
+      "example": "Example: Teacher Wang's Journey Map",
+      "exampleDesc": "Essay Training → Knowledge Monetization",
+      "progress": "Progress",
+      "progressTip": "Tap any node to see step details, drag to adjust progress",
+      "features": [
+        { "icon": "🗺️", "title": "Visual Route", "desc": "5-step roadmap, each with specific actions" },
+        { "icon": "📍", "title": "Landmarks", "desc": "Each step is a landmark with a unique icon" },
+        { "icon": "🚶", "title": "Walking Character", "desc": "See yourself move through each step in real time" }
+      ]
+    },
+    "fragmentMessages": {
+      "enough": "— Enough to see some patterns",
+      "keepCollecting": ", keep collecting",
+      "ready1": "Your fragments are enough to paint a self-portrait. Want to find someone to see what you two can build together?",
+      "ready2": "Some directions need another pair of eyes. Maybe worth co-creating.",
+      "ready3": "When you're ready to walk with someone, two journeys can meet here.",
+      "coAction": "Continue our journey →",
+      "exploreAction": "Explore co-creation →"
+    },
+    "cta": {
+      "tagline": "What you've done hides your next step.",
+      "copyright": "© 2026 PuzzleMe | Turn what you've done into your next step"
+    },
+    "langSwitch": "中文"
+  },
+  "nav": {
+    "login": "Log In",
+    "dashboard": "Dashboard"
+  },
+  "footer": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  }
+}

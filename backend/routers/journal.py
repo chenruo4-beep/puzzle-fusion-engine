@@ -40,12 +40,18 @@ async def _extract_and_suggest(journal: JournalEntry, content: str, db: Session)
 async def list_journals(
     page: int = 1,
     page_size: int = 20,
+    source: str = "journal",  # "journal"=only journals, "observation"=only observations, "all"=both
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """获取当前用户的所有日记列表，支持分页"""
+    """获取日记列表，支持分页，按来源过滤（默认只显示日记，排除自我观察）"""
     from utils.response import paginated_response
     q = db.query(JournalEntry).filter(JournalEntry.user_id == current_user.id)
+    if source == "journal":
+        q = q.filter(~JournalEntry.tags.contains("source:observation"))
+    elif source == "observation":
+        q = q.filter(JournalEntry.tags.contains("source:observation"))
+    # source == "all" => no filter
     total = q.count()
     items = q.order_by(JournalEntry.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
     return paginated_response(items, total, page, page_size)
@@ -86,7 +92,7 @@ async def quick_save(body: QuickSaveRequest, db: Session = Depends(get_db), curr
     journal = JournalEntry(
         user_id=current_user.id,
         content=content,
-        tags="今日自我观察",
+        tags="source:observation,今日自我观察",
     )
     db.add(journal)
     db.commit()

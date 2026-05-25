@@ -12,6 +12,10 @@ body {
   background: linear-gradient(135deg, #f5f0eb 0%, #e8e0d5 100%);
   color: #3c3a37;
   min-height: 100vh;
+  /* 移动端适配：安全区域 + 触摸优化 */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .dark body {
@@ -1690,4 +1694,216 @@ body {
 
 .animate-soft-pulse {
   animation: soft-pulse 2s ease-in-out infinite;
+}
+
+/* ========================================
+   暗色模式全局覆盖 (P1.8)
+   策略：用 .dark 后代选择器统一处理，
+   避免逐页逐组件改 dark: 类名
+   ======================================== */
+
+.dark h1, .dark h2, .dark h3 {
+  color: #e8e0d5;
+}
+
+.dark h4, .dark h5, .dark h6 {
+  color: #d4ccc4;
+}
+
+/* 卡片/容器背景 */
+.dark .bg-white,
+.dark [class*="bg-white/"] {
+  background-color: #2a2a2a;
+}
+
+.dark .bg-warm-light {
+  background-color: #1a1a2e;
+}
+
+.dark .bg-warm-bg {
+  background-color: #1e1e2e;
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-100 {
+  background-color: #222;
+}
+
+/* 文字颜色 */
+.dark .text-warm-dark,
+.dark .text-gray-800,
+.dark .text-gray-700,
+.dark .text-gray-900 {
+  color: #e8e0d5;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500 {
+  color: #a09890;
+}
+
+.dark .text-gray-400,
+.dark .text-gray-300 {
+  color: #706860;
+}
+
+/* 边框 */
+.dark .border-warm-dark\/10,
+.dark .border-warm-dark\/20,
+.dark .border-gray-200,
+.dark .border-gray-100 {
+  border-color: #3a3a3a;
+}
+
+/* 输入框 */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #222;
+  color: #e8e0d5;
+  border-color: #3a3a3a;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #706860;
+}
+
+/* 按钮保持品牌色 */
+.dark .bg-warm-accent {
+  background-color: #b8a088;
+}
+
+.dark .bg-warm-orange {
+  background-color: #d97746;
+}
+
+/* 骨架屏暗色 */
+.dark .bg-gray-200 {
+  background-color: #333;
+}
+
+/* Link 颜色 */
+.dark a {
+  color: #c4a882;
+}
+
+/* Scrollbar */
+.dark ::-webkit-scrollbar {
+  width: 6px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
+}
+
+/* ========================================
+   暗色模式精细化 (O3)
+   覆盖遗漏的阴影、进度条、徽章、过渡动画
+   ======================================== */
+
+/* 1. 拼图卡片阴影 — 暗色下用更亮的阴影 */
+.dark .puzzle-card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+.dark .puzzle-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* 2. 拼图碎片内部文字 */
+.dark .puzzle-piece-text {
+  color: #e8e0d5;
+}
+
+/* 3. 进度条轨道背景 */
+.dark .bg-warm-dark\/5 {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* 4. 已浇水按钮状态 */
+.dark .bg-warm-light\/60 {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+.dark .text-warm-dark\/30 {
+  color: #5a5550;
+}
+
+/* 5. 通用阴影暗色适配 */
+.dark .shadow-sm {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+.dark .shadow-md {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.dark .shadow-lg {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* 6. Focus ring 暗色 */
+.dark .ring-warm-accent\/20 {
+  --tw-ring-color: rgba(184, 160, 136, 0.2);
+}
+.dark .focus\:ring-warm-accent\/50:focus {
+  --tw-ring-color: rgba(184, 160, 136, 0.5);
+}
+
+/* 7. Badge/Tag 暗色 */
+.dark .bg-warm-accent\/10 {
+  background-color: rgba(184, 160, 136, 0.15);
+}
+.dark .bg-warm-orange\/10 {
+  background-color: rgba(217, 119, 70, 0.15);
+}
+
+/* 8. 分隔线加强 */
+.dark .divide-warm-dark\/10 > * + * {
+  border-color: #333;
+}
+
+/* 9. Modal/Overlay */
+.dark .bg-black\/30 {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.dark .bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* 10. Toast 通知暗色 */
+.dark .toast {
+  background-color: #2a2a2a;
+  color: #e8e0d5;
+  border-color: #3a3a3a;
+}
+
+/* 11. Skeleton/Loading 暗色脉冲 */
+.dark .animate-pulse {
+  --tw-bg-opacity: 1;
+}
+
+/* 12. Transition 防闪烁 */
+body, body * {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* 13. 封面/横幅暗色 */
+.dark .bg-warm-bg {
+  background-color: #1e1e2e;
+}
+
+/* 14. Tooltip/下拉暗色 */
+.dark [data-tooltip]::after,
+.dark [role="tooltip"] {
+  background-color: #333;
+  color: #e8e0d5;
+}
+
+/* 15. Empty State 插图区域 */
+.dark .text-warm-dark\/20 {
+  color: #4a4a4a;
 }

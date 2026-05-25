@@ -1,11 +1,27 @@
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 性能优化：压缩、安全头、严格模式
+  compress: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  
+  // 图片优化
   images: {
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60,
+    minimumCacheTTL: 31536000, // 1年缓存
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    domains: [], // 按需添加
   },
+  
+  // 实验性优化
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts'],
+    scrollRestoration: true,
   },
   webpack: (config, { isServer }) => {
     // 拆分大型chunk，避免单个文件过大
@@ -55,4 +71,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

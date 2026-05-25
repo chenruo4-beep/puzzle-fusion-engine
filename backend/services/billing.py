@@ -1,6 +1,6 @@
 """计费服务 — 免费版限制逻辑"""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func as sqlfunc
 from fastapi import HTTPException, status
@@ -15,9 +15,22 @@ FREE_FUSION_LIMIT = 25
 TRIAL_DAYS = 7
 
 
+def _is_pro_user(user: User) -> bool:
+    """判断用户是否为专业版（含试用 + Stripe 订阅活跃）"""
+    if user.tier == "pro":
+        if user.subscription_status == "active":
+            return True
+        if user.subscription_status == "trialing":
+            return True
+    # 试用期活跃
+    if user.trial_expires_at and user.trial_expires_at > datetime.now(timezone.utc):
+        return True
+    return user.tier == "pro"
+
+
 def check_fragment_limit(user: User, db: Session) -> None:
     """免费用户碎片数 ≥ 50 时拒绝创建"""
-    if user.tier != "free":
+    if _is_pro_user(user):
         return
     count = db.query(sqlfunc.count(Fragment.id)).filter(
         Fragment.user_id == user.id,
@@ -38,7 +51,7 @@ def check_fragment_limit(user: User, db: Session) -> None:
 
 def check_fusion_limit(user: User, db: Session) -> None:
     """免费用户当月融合次数 ≥ 25 时拒绝"""
-    if user.tier != "free":
+    if _is_pro_user(user):
         return
     now = datetime.utcnow()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -82,19 +95,21 @@ def get_usage(user: User, db: Session) -> dict:
 
     return {
         "tier": user.tier,
+        "subscription_status": user.subscription_status,
         "is_trial": is_trial,
         "trial_days_left": (
             (user.trial_expires_at - now).days
             if is_trial and user.trial_expires_at
             else 0
         ),
+        "is_pro": _is_pro_user(user),
         "fragments": {
             "used": fragment_count,
-            "limit": None if user.tier != "free" else FREE_FRAGMENT_LIMIT,
+            "limit": None if _is_pro_user(user) else FREE_FRAGMENT_LIMIT,
         },
         "fusions": {
             "used": fusion_count,
-            "limit": None if user.tier != "free" else FREE_FUSION_LIMIT,
+            "limit": None if _is_pro_user(user) else FREE_FUSION_LIMIT,
         },
     }
 

@@ -1,0 +1,26 @@
+{% extends "email/base.html" %}
+{% block content %}
+<span class="emoji">📊</span>
+<p style="font-size: 18px; font-weight: 600; margin-top: 0; text-align: center;">你的本周融合报告</p>
+<p>你好，</p>
+<p>又到了一周回顾的时间！这是你在拼拼看Me上的本周数据：</p>
+
+<table class="stats">
+  <tr>
+    <td><div class="num">{{ fragments }}</div><div class="label">新碎片</div></td>
+    <td><div class="num">{{ fusions }}</div><div class="label">新融合</div></td>
+    <td><div class="num">{{ checkins }}</div><div class="label">打卡天数</div></td>
+  </tr>
+</table>
+
+{% if highlight %}
+<p style="margin-top: 20px;">
+  <span class="highlight">✨ 本周亮点：</span><br>
+  {{ highlight }}
+</p>
+{% endif %}
+
+<p style="text-align: center; margin-top: 24px;">
+  <a href="{{ settings.FRONTEND_URL }}/analytics" class="btn">查看完整报告</a>
+</p>
+{% endblock %}

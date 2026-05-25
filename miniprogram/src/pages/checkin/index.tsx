@@ -3,6 +3,11 @@ import { View, Text, Button } from '@tarojs/components';
 import { getCheckins, completeCheckin, CheckIn } from '../../services/api';
 import './index.scss';
 
+export const config = {
+  enableShareAppMessage: true,
+  enableShareTimeline: true,
+};
+
 interface State {
   checkins: CheckIn[];
   loading: boolean;
@@ -13,6 +18,19 @@ export default class Checkin extends Component<object, State> {
     checkins: [],
     loading: true,
   };
+
+  onShareAppMessage() {
+    return {
+      title: '每天进步一点点 - 拼拼看Me',
+      path: '/pages/checkin/index',
+    };
+  }
+
+  onShareTimeline() {
+    return {
+      title: '每天进步一点点 - 拼拼看Me',
+    };
+  }
 
   componentDidShow() {
     this.loadCheckins();
@@ -109,6 +127,9 @@ export default class Checkin extends Component<object, State> {
             )}
           </View>
         )}
+
+        {/* 分享按钮 */}
+        <Button className="share-btn" openType="share" style="margin-top:16px;">分享给朋友</Button>
       </View>
     );
   }

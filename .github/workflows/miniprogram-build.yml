@@ -1,0 +1,70 @@
+name: 小程序构建 (Miniprogram Build)
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "miniprogram/**"
+      - ".github/workflows/miniprogram-build.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "miniprogram/**"
+      - ".github/workflows/miniprogram-build.yml"
+
+env:
+  NODE_VERSION: "20"
+
+defaults:
+  run:
+    working-directory: miniprogram
+
+jobs:
+  type-check:
+    name: 类型检查 (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: miniprogram/package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: TypeScript 编译检查
+        run: npx tsc --noEmit
+
+  build-weapp:
+    name: 构建 (微信小程序)
+    needs: type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: miniprogram/package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建微信小程序
+        run: npm run build:weapp
+
+      - name: 验证构建产物
+        run: |
+          if [ -d "dist" ]; then
+            echo "✅ 构建成功，产物目录: dist/"
+            ls -lh dist/ | head -20
+          else
+            echo "❌ dist/ 目录不存在，构建可能失败"
+            exit 1
+          fi
