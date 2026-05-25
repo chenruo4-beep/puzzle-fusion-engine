@@ -100,6 +100,25 @@ async function request<T>(path: string, options?: { method?: string; body?: unkn
   }
 }
 
+// 暴露原始请求（用于需要访问响应对象的场景）
+export async function authFetch(path: string, options?: { method?: string; body?: string; headers?: Record<string, string> }) {
+  const res = await Taro.request({
+    url: `${BASE}${path}`,
+    method: options?.method || 'GET',
+    data: options?.body ? JSON.parse(options.body) : undefined,
+    header: {
+      'Content-Type': 'application/json',
+      ...authHeader(),
+      ...options?.headers,
+    },
+  });
+  return {
+    ok: res.statusCode >= 200 && res.statusCode < 300,
+    status: res.statusCode,
+    json: async () => res.data,
+  } as Response;
+}
+
 // ---- 类型定义 ----
 
 export interface Fragment {

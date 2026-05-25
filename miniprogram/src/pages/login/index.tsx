@@ -1,7 +1,7 @@
 import { Component } from 'react';
 import { View, Text, Input, Button, Navigator } from '@tarojs/components';
-import Taro from '@tarojs/taro';
-import { login, register, setToken } from '../../services/api';
+import Taro, { getCurrentInstance } from '@tarojs/taro';
+import { login, register, setToken, authFetch } from '../../services/api';
 import './index.scss';
 
 interface State {
@@ -11,6 +11,7 @@ interface State {
   confirm: string;
   loading: boolean;
   error: string;
+  inviteCode: string | null;
 }
 
 export default class Login extends Component<object, State> {
@@ -21,7 +22,18 @@ export default class Login extends Component<object, State> {
     confirm: '',
     loading: false,
     error: '',
+    inviteCode: null,
   };
+
+  componentDidShow() {
+    // 读取 URL 参数中的邀请码
+    const params = getCurrentInstance().router?.params || {};
+    const invite = params.invite as string | undefined;
+    if (invite) {
+      this.setState({ inviteCode: invite, mode: 'register' });
+      Taro.showToast({ title: '邀请码已自动填入', icon: 'none' });
+    }
+  }
 
   switchMode() {
     this.setState((prev) => ({
@@ -31,7 +43,7 @@ export default class Login extends Component<object, State> {
   }
 
   async doSubmit() {
-    const { mode, email, password, confirm } = this.state;
+    const { mode, email, password, confirm, inviteCode } = this.state;
 
     if (!email.trim()) { this.setState({ error: '请输入邮箱' }); return; }
     if (!password) { this.setState({ error: '请输入密码' }); return; }
@@ -49,8 +61,22 @@ export default class Login extends Component<object, State> {
 
       setToken(res.access_token);
 
+      // 新用户兑换邀请码
+      if (mode === 'register' && inviteCode) {
+        try {
+          const redeemRes = await authFetch(`/api/invites/${inviteCode}/redeem`, {
+            method: 'POST',
+          });
+          if (redeemRes.ok) {
+            Taro.showToast({ title: '🎉 邀请奖励已到账', icon: 'success' });
+          }
+        } catch (err) {
+          console.log('兑换邀请码失败', err);
+        }
+      }
+
       Taro.showToast({ title: mode === 'login' ? '登录成功' : '注册成功', icon: 'success' });
-      setTimeout(() => Taro.navigateBack(), 500);
+      setTimeout(() => Taro.redirectTo({ url: '/pages/index/index' }), 500);
     } catch (err: any) {
       this.setState({ error: err.message || '操作失败' });
     } finally {
@@ -59,7 +85,7 @@ export default class Login extends Component<object, State> {
   }
 
   render() {
-    const { mode, email, password, confirm, loading, error } = this.state;
+    const { mode, email, password, confirm, loading, error, inviteCode } = this.state;
 
     return (
       <View className="login-page">
@@ -105,6 +131,18 @@ export default class Login extends Component<object, State> {
                   onInput={(e) => this.setState({ confirm: (e.target as any).value || '' })}
                   password
                 />
+              </View>
+            )}
+            
+            {mode === 'register' && inviteCode && (
+              <View className="field">
+                <Text className="field-label">邀请码</Text>
+                <Input
+                  className="field-input"
+                  value={inviteCode}
+                  disabled
+                />
+                <Text className="field-hint">🎉 注册成功后双方各获得 5 次免费融合</Text>
               </View>
             )}
           </View>

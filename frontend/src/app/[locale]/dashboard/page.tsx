@@ -3,6 +3,12 @@
 import { useState, useEffect, useMemo, memo } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import {
+  requestPushSubscription,
+  cancelPushSubscription,
+  checkPushSubscription,
+  sendTestPush,
+} from '@/app/sw-register';
 
 // 动态导入非关键组件，减小首屏 bundle
 const CompletionRing = dynamic(() => import('@/components/CompletionRing'), { ssr: false });
@@ -123,6 +129,10 @@ export default function DashboardHome() {
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [gapData, setGapData] = useState<GapData | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // 推送状态
+  const [pushStatus, setPushStatus] = useState<'granted' | 'denied' | 'default' | 'unsupported'>('default');
+  const [pushLoading, setPushLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -172,6 +182,31 @@ export default function DashboardHome() {
       // localStorage 不可用时不处理
     }
   }, []);
+
+  // 检查推送订阅状态
+  useEffect(() => {
+    checkPushSubscription().then(setPushStatus);
+  }, []);
+
+  // 切换推送订阅
+  const togglePush = async () => {
+    setPushLoading(true);
+    try {
+      if (pushStatus === 'granted') {
+        await cancelPushSubscription();
+        setPushStatus('default');
+      } else {
+        const ok = await requestPushSubscription();
+        setPushStatus(ok ? 'granted' : 'denied');
+        if (ok) {
+          // 发送测试推送
+          await sendTestPush();
+        }
+      }
+    } finally {
+      setPushLoading(false);
+    }
+  };
 
   // 问候语
   const now = new Date();
@@ -264,6 +299,34 @@ export default function DashboardHome() {
           {QUOTES[quoteIndex]}
         </p>
       </div>
+
+      {/* ====== 推送通知设置 ====== */}
+      {pushStatus !== 'unsupported' && (
+        <div className="rounded-2xl bg-white/80 dark:bg-dark-surface border border-warm-dark/10 dark:border-dark-border p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🔔</span>
+            <div>
+              <div className="text-sm font-medium text-warm-dark dark:text-dark-text">推送通知</div>
+              <div className="text-xs text-warm-dark/50 dark:text-dark-text/50">
+                {pushStatus === 'granted' ? '已开启，接收打卡提醒' :
+                 pushStatus === 'denied' ? '已拒绝，在浏览器设置中开启' :
+                 '开启后可接收打卡提醒'}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={togglePush}
+            disabled={pushLoading || pushStatus === 'denied'}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              pushStatus === 'granted'
+                ? 'bg-warm-accent/20 text-warm-accent hover:bg-warm-accent/30'
+                : 'bg-warm-accent text-white hover:bg-warm-accent/90'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {pushLoading ? '处理中...' : pushStatus === 'granted' ? '关闭' : '开启'}
+          </button>
+        </div>
+      )}
 
       {/* ====== 深度问题 ====== */}
       <DeepQuestionCard />

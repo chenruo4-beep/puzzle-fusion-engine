@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import { View, Text, Navigator, Button } from '@tarojs/components';
-import { getToken, clearToken } from '../../services/api';
+import Taro, { getCurrentInstance } from '@tarojs/taro';
+import { getToken, clearToken, authFetch } from '../../services/api';
 import './index.scss';
 
 export const config = {
@@ -10,32 +11,55 @@ export const config = {
 
 interface State {
   loggedIn: boolean;
+  inviteCode: string | null;
 }
 
 export default class Index extends Component<object, State> {
   state: State = {
     loggedIn: false,
+    inviteCode: null,
   };
 
   componentDidShow() {
     this.setState({ loggedIn: getToken() !== null });
+    this.loadInviteCode();
+  }
+
+  async loadInviteCode() {
+    if (!getToken()) return;
+    try {
+      const res = await authFetch('/api/invites', {
+        method: 'POST',
+        body: JSON.stringify({ source: 'miniprogram' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        this.setState({ inviteCode: data.code });
+      }
+    } catch (err) {
+      console.log('获取邀请码失败', err);
+    }
   }
 
   handleLogout() {
     clearToken();
-    this.setState({ loggedIn: false });
+    this.setState({ loggedIn: false, inviteCode: null });
   }
 
   onShareAppMessage() {
+    const { inviteCode } = this.state;
+    const path = inviteCode
+      ? `/pages/index/index?invite=${inviteCode}`
+      : '/pages/index/index';
     return {
-      title: '拼拼看Me - 拼出更好的自己',
-      path: '/pages/index/index',
+      title: '拼拼看Me - 帮你拼出更好的自己',
+      path,
     };
   }
 
   onShareTimeline() {
     return {
-      title: '拼拼看Me - 拼出更好的自己',
+      title: '拼拼看Me - 帮你拼出更好的自己',
     };
   }
 
@@ -61,7 +85,10 @@ export default class Index extends Component<object, State> {
               继续拼图
             </Navigator>
           ) : (
-            <Navigator url="/pages/login/index" className="btn-primary">
+            <Navigator 
+              url={inviteCode ? `/pages/login/index?invite=${inviteCode}` : '/pages/login/index'} 
+              className="btn-primary"
+            >
               登录 / 注册
             </Navigator>
           )}
