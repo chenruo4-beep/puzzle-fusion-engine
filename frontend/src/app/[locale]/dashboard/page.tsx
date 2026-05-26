@@ -9,6 +9,7 @@ import {
   checkPushSubscription,
   sendTestPush,
 } from '@/app/sw-register';
+import { authFetch } from '@/lib/api';
 
 // 动态导入非关键组件，减小首屏 bundle
 const CompletionRing = dynamic(() => import('@/components/CompletionRing'), { ssr: false });
@@ -66,16 +67,7 @@ const QUOTES = [
   '拼图不需要一开始就完整。慢慢来，每一块都算数 🧩',
 ];
 
-// const TYPE_COLORS: Record<string, string> = {
-//   '技能': '#4a7c9b',
-//   '能力': '#5a7a5a',
-//   '爱好': '#c49a6c',
-//   '习惯': '#c49a6c',
-//   '知识': '#b8a088',
-//   '经历': '#b8a088',
-//   '资源': '#7a9b4a',
-//   '性格': '#9b6c4a',
-// };
+
 
 /* ---------- 活动条目（融合 / 日记混合排序） ---------- */
 interface ClusterItem {
@@ -711,4 +703,4 @@ function formatRelativeTime(isoStr: string): string {
   if (diffDay < 7) return `${diffDay}天前`;
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 }
-import { authFetch   } from '@/lib/api';
+

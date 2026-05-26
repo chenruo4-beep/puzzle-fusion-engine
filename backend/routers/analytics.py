@@ -16,7 +16,6 @@ from models.user import User
 from routers.auth import get_current_user
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
-import random
 
 
 router = APIRouter()

@@ -1,18 +1,39 @@
 """碎片路由 - 碎片的增删查"""
 
 import logging
+from typing import List, Optional
+
+import json
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
 from database import get_db
 from models.fragment import Fragment
 from models.user import User
 from routers.auth import get_current_user
-from schemas.fragment import FragmentCreate, FragmentUpdate, FragmentResponse, FragmentArchiveRequest, RateFragmentBody, ConfirmTraitBody, DenyTraitBody, BatchImportRequest, BatchImportPreviewItem
-from utils.response import success_response, bad_request_response, not_found_response, validation_error_response
-from services.ai_service import AIService
+from schemas.fragment import (
+    FragmentCreate,
+    FragmentUpdate,
+    FragmentResponse,
+    FragmentArchiveRequest,
+    RateFragmentBody,
+    ConfirmTraitBody,
+    DenyTraitBody,
+    BatchImportRequest,
+    BatchImportPreviewItem,
+)
+from utils.response import (
+    success_response,
+    bad_request_response,
+    not_found_response,
+    validation_error_response,
+)
 from services.ai.vector_store import upsert_vector, remove_vector
 from services.ai.similarity import jaccard_similarity
 from services.billing import check_fragment_limit
+
+from services.ai_service import AIService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

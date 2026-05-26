@@ -1,15 +1,18 @@
 """认证路由 - 用户注册与登录"""
 
-from fastapi import APIRouter, Depends, HTTPException, status, Header
-from sqlalchemy.orm import Session
-from passlib.context import CryptContext
-from typing import Optional
+import logging
 from datetime import datetime, timedelta, timezone
-from jose import jwt, JWTError
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status, Header
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from config import settings
 from database import get_db
 from models.user import User
 from schemas.user import UserCreate, UserLogin, UserResponse
-from config import settings
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

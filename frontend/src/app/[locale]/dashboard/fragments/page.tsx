@@ -71,6 +71,9 @@ export default function FragmentsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [fileImportOpen, setFileImportOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'json' | 'csv' | 'markdown'>('json');
+  const [exporting, setExporting] = useState(false);
   const [selectedFragment, setSelectedFragment] = useState<Fragment | null>(null);
   const [fragmentStory, setFragmentStory] = useState<string | null>(null);
   const [storyLoading, setStoryLoading] = useState(false);
@@ -326,6 +329,12 @@ export default function FragmentsPage() {
         </div>
         <div className="hidden sm:flex items-center gap-2">
           <button
+            onClick={() => setExportOpen(true)}
+            className="px-4 py-2 rounded-xl border border-warm-dark/10 dark:border-dark-border text-sm text-warm-dark/60 dark:text-dark-text/60 hover:bg-warm-dark/5 transition-all"
+          >
+            📥 导出数据
+          </button>
+          <button
             onClick={() => { setBatchOpen(true); setBatchText(''); setBatchPreview([]); }}
             className="px-4 py-2 rounded-xl border border-warm-dark/10 dark:border-dark-border text-sm text-warm-dark/60 dark:text-dark-text/60 hover:bg-warm-dark/5 transition-all"
           >
@@ -351,6 +360,100 @@ export default function FragmentsPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Export Modal ─────────────────────────────────────── */}
+      {exportOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={() => setExportOpen(false)}
+        >
+          <div
+            className="bg-warm-light rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-5"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-warm-dark">📥 导出我的数据</h2>
+              <button
+                onClick={() => setExportOpen(false)}
+                className="text-warm-dark/40 hover:text-warm-dark text-xl"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-sm text-warm-dark/60">
+              将导出你所有的碎片和融合记录，包含完整内容和标签。
+            </p>
+            <div className="space-y-2">
+              <span className="text-xs text-warm-dark/40 font-medium">选择格式</span>
+              {(['json', 'csv', 'markdown'] as const).map(fmt => (
+                <button
+                  key={fmt}
+                  onClick={() => setExportFormat(fmt)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
+                    exportFormat === fmt
+                      ? 'border-warm-accent bg-warm-accent/5 text-warm-dark'
+                      : 'border-warm-dark/10 text-warm-dark/60 hover:border-warm-dark/20 hover:bg-warm-dark/5'
+                  }`}
+                >
+                  <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                    exportFormat === fmt ? 'border-warm-accent' : 'border-warm-dark/20'
+                  }`}>
+                    {exportFormat === fmt && (
+                      <span className="w-2 h-2 rounded-full bg-warm-accent" />
+                    )}
+                  </span>
+                  <div className="text-left">
+                    <div className="text-sm font-medium">
+                      {fmt === 'json' ? 'JSON' : fmt === 'csv' ? 'CSV（表格）' : 'Markdown（笔记）'}
+                    </div>
+                    <div className="text-xs text-warm-dark/40">
+                      {fmt === 'json' ? '完整数据，可编程使用'
+                        : fmt === 'csv' ? '可导入 Excel / Numbers'
+                        : '适合阅读和分享'}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  const token = localStorage.getItem('token');
+                  if (!token) { toast('请先登录', 'error'); return; }
+                  const res = await authFetch('/api/export/all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ type: 'all', format: exportFormat }),
+                  });
+                  if (!res.ok) throw new Error(`导出失败 (${res.status})`);
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  const now = new Date();
+                  const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+                  a.href = url;
+                  a.download = `拼拼看Me_全量导出_${ts}.${exportFormat === 'markdown' ? 'md' : exportFormat}`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  setExportOpen(false);
+                  toast('导出成功，文件已下载', 'success');
+                } catch (err) {
+                  toast('导出失败：' + (err instanceof Error ? err.message : '未知错误'), 'error');
+                } finally {
+                  setExporting(false);
+                }
+              }}
+              disabled={exporting}
+              className="w-full py-3 rounded-xl bg-warm-accent text-white text-sm font-medium hover:bg-warm-accent/90 transition-all disabled:opacity-60"
+            >
+              {exporting ? '⏳ 正在导出...' : '下载文件'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Smart Bundle Recommendations ─────────────────────── */}
       <SmartBundleRecommend />

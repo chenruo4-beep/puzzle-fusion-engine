@@ -1,32 +1,33 @@
 """融合路由 — AI 融合碎片的创建与查询"""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
-import json
 import logging
+from datetime import datetime
+from typing import List, Optional
+
+import json
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from database import get_db
+from models.fragment import Fragment
+from models.fusion import Fusion
 from models.user import User
 from routers.auth import get_current_user
-from services.ai.cognitive_profile import cognitive_profile
-from models.fusion import Fusion
-from models.fragment import Fragment
 from schemas.fusion import FusionCreate, FusionSaveRequest, FusionResponse
+from services.ai.cognitive_profile import cognitive_profile
+from services.ai.quality_monitor import quality_monitor
+from services.ai_service import AIService
+from services.billing import check_fusion_limit
+
+logger = logging.getLogger(__name__)
+router = APIRouter()
 
 
 class FeedbackBody(BaseModel):
     feedback: str  # 'useful' or 'not_useful'
     reason: Optional[str] = None  # 选择"没用"时的原因
     source: Optional[str] = 'web'  # 反馈来源
-from services.ai_service import AIService
-from services.ai.quality_monitor import quality_monitor
-from services.billing import check_fusion_limit
-
-logger = logging.getLogger(__name__)
-router = APIRouter()
 
 
 class FragmentItem(BaseModel):

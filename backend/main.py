@@ -1,5 +1,6 @@
 """拼拼看Me - FastAPI 入口"""
 
+import os
 import time
 import warnings
 from contextlib import asynccontextmanager
@@ -29,7 +30,7 @@ from sentry_init import init_sentry
 
 logger = get_logger(__name__)
 from routers import auth, journal, fragment, fusion, template, checkin, analytics, inspirations, smart_log, gap, cooccurrence, journey_map, co_creation, co_creation_order, habit, feedback, suggestions, failure, profile, imports, fusion_diary, billing, password_reset, search, invites, push, ai_provider, community
-from routers import email_preferences
+from routers import email_preferences, exports
 
 
 @asynccontextmanager
@@ -189,14 +190,11 @@ app.include_router(password_reset.router, prefix="/api/auth", tags=["密码重�
 app.include_router(email_preferences.router, tags=["邮件偏好"])
 app.include_router(invites.router, tags=["邀请"])
 app.include_router(search.router, prefix="/api/search", tags=["语义搜索"])
-app.include_router(invites.router, tags=["邀请"])
-app.include_router(invites.router, tags=["邀请裂变"])
 app.include_router(push.router, prefix="/api/push", tags=["推送"])
 app.include_router(ai_provider.router, tags=["AI Provider"])
 app.include_router(community.router, prefix="/api", tags=["社区"])
+app.include_router(exports.router)  # 前缀已在 router 定义中: /api/export
 
-
-@app.get("/api/health")
 async def health():
     """健康检查端点"""
     return {"status": "ok"}

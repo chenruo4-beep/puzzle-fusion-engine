@@ -210,7 +210,6 @@ def _generate_followup(title: str, action: Optional[str]) -> str:
         f"好，第一步迈出去了！现在复盘一下：完成「{title}」的过程中，你用了什么能力？",
         f"恭喜完成✅ 有没有什么经验或感受想记录下来？这些记录以后融合时可能会派上用场。",
     ]
-    import hashlib
     idx = hash(title + (action or "done")) % len(template_pool)
     return template_pool[idx]
 
